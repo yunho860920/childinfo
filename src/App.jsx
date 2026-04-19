@@ -368,16 +368,21 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-8 md:space-y-12 pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8">
-          <GrowthCard 
-            childInfo={childInfo} 
-            setChildInfo={setChildInfo} 
-            percentile={percentile} 
-            handleBirthDateChange={handleBirthDateChange} 
-            handleAddGrowthRecord={handleAddGrowthRecord} 
-            onShowChart={() => setShowGrowthChart(true)}
-          />
-          <TemperatureCard selectedTemp={selectedTemp} setSelectedTemp={setSelectedTemp} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8 items-stretch">
+          <div className="lg:col-span-2">
+            <GrowthCard 
+              childInfo={childInfo} 
+              setChildInfo={setChildInfo} 
+              percentile={percentile} 
+              growthRecords={growthRecords}
+              handleBirthDateChange={handleBirthDateChange} 
+              handleAddGrowthRecord={handleAddGrowthRecord} 
+              onShowChart={() => setShowGrowthChart(true)}
+            />
+          </div>
+          <div className="lg:col-span-1">
+            <TemperatureCard selectedTemp={selectedTemp} setSelectedTemp={setSelectedTemp} />
+          </div>
         </div>
 
         <nav className="flex items-center justify-center gap-4 md:gap-8 py-4 sticky top-20 z-40">
