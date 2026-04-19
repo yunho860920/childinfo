@@ -114,8 +114,6 @@ const GrowthCard = ({
         </div>
       </div>
     </div>
-      </div>
-    </div>
   );
 };
 
