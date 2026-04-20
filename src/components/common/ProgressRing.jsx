@@ -57,8 +57,8 @@ const ProgressRing = ({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onShowChart}
-            style={{ backgroundColor: gradientColors[0] }}
-            className="mt-3 px-3 py-1.5 text-white text-[10px] font-black rounded-full shadow-lg flex items-center gap-1.5 transition-colors"
+            style={{ backgroundColor: Array.isArray(gradientColors) ? gradientColors[0] : '#3B82F6' }}
+            className="mt-3 px-3 py-1.5 text-white text-[10px] font-black rounded-full shadow-lg flex items-center gap-1.5 transition-colors border border-white/10"
           >
             <TrendingUp size={12} />
             차트 보기

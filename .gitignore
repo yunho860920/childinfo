@@ -1,3 +1,4 @@
+# Maintenance: Force trigger deployment for dashboard UI updates
 node_modules/
 dist/
 .env

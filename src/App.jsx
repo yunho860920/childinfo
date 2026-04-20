@@ -393,7 +393,7 @@ function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 pb-48">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-full overflow-hidden">
           <GrowthCard 
             childInfo={childInfo} 
             setChildInfo={setChildInfo} 

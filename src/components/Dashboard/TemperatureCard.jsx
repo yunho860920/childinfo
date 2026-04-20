@@ -137,12 +137,12 @@ const TemperatureCard = ({
       {/* Footer Area: Actions & Save */}
       <div className="space-y-4 mt-auto">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-brand-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-black/[0.02]">
-            <p className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tight mb-1">상황별 대처</p>
+          <div className="bg-blue-50/40 dark:bg-blue-500/5 p-3 rounded-2xl border border-blue-100/50 dark:border-blue-500/10">
+            <p className="text-[10px] font-black text-blue-500/80 uppercase tracking-tight mb-1">상황별 대처</p>
             <p className="text-[11px] font-bold text-brand-gray-900 dark:text-white leading-tight truncate">{status.action}</p>
           </div>
-          <div className="bg-brand-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-black/[0.02]">
-            <p className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tight mb-1">복용 가이드</p>
+          <div className="bg-blue-50/40 dark:bg-blue-500/5 p-3 rounded-2xl border border-blue-100/50 dark:border-blue-500/10">
+            <p className="text-[10px] font-black text-blue-500/80 uppercase tracking-tight mb-1">복용 가이드</p>
             <p className={cn("text-[11px] font-bold leading-tight truncate", selectedTemp >= 38.5 ? "text-red-500" : "text-brand-gray-900 dark:text-white")}>{status.meds}</p>
           </div>
         </div>
@@ -155,12 +155,12 @@ const TemperatureCard = ({
               if (!hasTakenMeds) setMedType('acetaminophen');
               else setMedType('none');
             }}
-            className="flex items-center gap-3 p-3 bg-brand-gray-50 dark:bg-white/5 rounded-2xl border border-black/[0.02] cursor-pointer hover:bg-brand-gray-100 transition-colors"
+            className="flex items-center gap-3 p-3 bg-blue-50/40 dark:bg-blue-500/5 rounded-2xl border border-blue-100/50 dark:border-blue-500/10 cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-500/10 transition-colors"
           >
-            <div className={cn("w-5 h-5 rounded-md border flex items-center justify-center transition-all", hasTakenMeds ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-apple-card border-brand-gray-200 dark:border-apple-border")}>
+            <div className={cn("w-5 h-5 rounded-md border flex items-center justify-center transition-all", hasTakenMeds ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-apple-card border-blue-200/50 dark:border-blue-500/20")}>
               {hasTakenMeds && <CheckCircle2 size={14} />}
             </div>
-            <span className="text-[12px] font-bold text-brand-gray-600 dark:text-brand-gray-300">현재 해열제 복용함</span>
+            <span className="text-[12px] font-bold text-blue-600 dark:text-blue-400">현재 해열제 복용함</span>
           </div>
 
           {hasTakenMeds && (
