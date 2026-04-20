@@ -2,13 +2,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navigation, X, MapPin } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../utils/uiUtils';
 import { ALL_REGIONS, FACILITIES_PER_PAGE } from '../../constants/uiConstants';
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
 
 const FacilitiesTab = ({
   searchQuery,

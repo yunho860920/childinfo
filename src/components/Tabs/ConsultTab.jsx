@@ -2,12 +2,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Send, User, ShieldCheck, Heart, Sparkles } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../utils/uiUtils';
 
 const ConsultTab = ({
   userId,

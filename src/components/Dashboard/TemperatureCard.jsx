@@ -1,14 +1,9 @@
 // src/components/Dashboard/TemperatureCard.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Save, CheckCircle2, AlertCircle } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import ProgressRing from '../common/ProgressRing';
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../utils/uiUtils';
 
 const TemperatureCard = ({ 
   selectedTemp, 

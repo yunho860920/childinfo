@@ -2,23 +2,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronRight, CheckCircle2, AlertCircle, BookOpen } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../utils/uiUtils';
 import { ageTimelineData } from '../../data/practicalInfo';
 
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
-
-const PracticalTab = ({
-  childInfo,
-  setSelectedMilestone,
-  selectedCategory,
-  setSelectedCategory,
-  selectedTimelineMonth,
-  setSelectedTimelineMonth
-}) => {
-  const categories = ['전체', '성장·발달', '영양·식사', '수면·심리'];
+const PracticalTab = ({ childInfo }) => {
+  const [selectedCategory, setSelectedCategory] = React.useState('전체');
+  const [selectedTimelineMonth, setSelectedTimelineMonth] = React.useState(0);
+  const categories = ['전체', '성장·발달', '영양·식사', '수면·심리와 정서'];
   const currentMonth = childInfo?.months || 0;
 
   const filteredData = (ageTimelineData || []).filter(item => {

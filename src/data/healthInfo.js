@@ -111,7 +111,7 @@ export const growthMilestones = [
   },
   {
     months: 24,
-    label: '생전 19~24개월',
+    label: '생후 19~24개월',
     items: [
       { id: 'm24_stair', name: '계단 오르기', desc: '난간을 잡고 계단을 한 발씩 올라가나요?', type: 'Physical' },
       { id: 'm24_sentence', name: '두 단어 문장', desc: '우유 줘, 이거 뭐야 같은 문장을 말하나요?', type: 'Language' },

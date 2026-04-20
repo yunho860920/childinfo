@@ -2,13 +2,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navigation, X, ChevronDown, MapPin, CheckCircle2, ExternalLink, AlertCircle } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { WELFARE_STAGES, ALL_REGIONS } from '../../constants/uiConstants';
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../utils/uiUtils';
 
 const WelfareTab = ({
   welfareItems = [],

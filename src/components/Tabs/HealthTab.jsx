@@ -2,13 +2,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Check, ShieldAlert } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../utils/uiUtils';
 import { vaccinationSchedule, temperatureGuide, ageHealthData, growthMilestones } from '../../data/healthInfo';
-
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
 
 const HealthTab = ({
   childInfo,
@@ -70,9 +65,16 @@ const HealthTab = ({
       {selectedHealthCategory === '예방접종 일정' ? (
         <div className="space-y-6">
           {(() => {
-            const total = vaccinationSchedule.reduce((acc, curr) => acc + curr.vaccines.length, 0);
-            const done = Object.values(completedVaccines || {}).filter(Boolean).length;
-            const pct = Math.round((done / total) * 100);
+            const { total, done, pct } = React.useMemo(() => {
+              const totalVax = vaccinationSchedule.reduce((acc, curr) => acc + curr.vaccines.length, 0);
+              const doneVax = Object.values(completedVaccines || {}).filter(Boolean).length;
+              return {
+                total: totalVax,
+                done: doneVax,
+                pct: Math.round((doneVax / totalVax) * 100)
+              };
+            }, [completedVaccines]);
+
             return (
               <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] p-6 shadow-soft">
                 <div className="flex items-end justify-between mb-4">

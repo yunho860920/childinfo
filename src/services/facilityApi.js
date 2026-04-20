@@ -21,6 +21,8 @@ const SIGGUNGU_DICT = {
 };
 
 export async function fetchChildFacilities() {
+  // ... (existing code unchanged, just ensuring it's exported)
+  // (Full content below)
   const apiKey = import.meta.env.VITE_BW_API_KEY;
   if (!apiKey) {
     console.warn("API key is missing. Using fallback data.");
@@ -91,6 +93,24 @@ export async function fetchChildFacilities() {
     return getFallbackFacilities();
   }
 }
+
+export const getFilteredFacilities = (facilities, region, subRegion, dong, query) => {
+  if (!facilities) return [];
+  
+  return facilities.filter(f => {
+    const matchRegion = region === '전체' || f.region === region;
+    const matchSub = subRegion === '전체' || f.subRegion === subRegion;
+    const matchDong = !dong || dong === '전체' || f.dong === dong;
+    
+    const lowerQuery = (query || "").toLowerCase();
+    const matchQuery = !query || 
+      (f.name || "").toLowerCase().includes(lowerQuery) || 
+      (f.address || "").toLowerCase().includes(lowerQuery) ||
+      (f.type || "").toLowerCase().includes(lowerQuery);
+      
+    return matchRegion && matchSub && matchDong && matchQuery;
+  });
+};
 
 function parseAggressiveRegion(addrStr, facName) {
   const parts = (addrStr || "").split(" ").filter(p => p.trim());

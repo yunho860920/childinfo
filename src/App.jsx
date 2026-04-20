@@ -14,8 +14,7 @@ import {
   Check,
   Thermometer
 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from './utils/uiUtils';
 
 // UI Components
 import GrowthCard from './components/Dashboard/GrowthCard';
@@ -33,14 +32,11 @@ import ThemeToggle from './components/common/ThemeToggle';
 // Services & Utils
 import { consultationService } from './services/consultationService';
 import { fetchWelfareServices } from './services/welfareApi';
-import { fetchChildFacilities, getFilteredFacilities } from './services/facilityService';
+import { fetchChildFacilities, getFilteredFacilities } from './services/facilityApi';
 import { loadSecureData, saveSecureData } from './utils/security';
 import { hashPin, calculateMonths, calculatePercentile } from './utils/growthUtils';
 import { FACILITIES_PER_PAGE, ALL_REGIONS } from './constants/uiConstants';
 
-function cn(...inputs) {
-  return twMerge(clsx(inputs));
-}
 
 function App() {
   // --- States ---
@@ -165,9 +161,6 @@ function App() {
   const [formAge, setFormAge] = React.useState('');
   const [formCategory, setFormCategory] = React.useState('양육');
 
-  const [selectedMilestone, setSelectedMilestone] = React.useState(null);
-  const [selectedCategory, setSelectedCategory] = React.useState('전체');
-  const [selectedTimelineMonth, setSelectedTimelineMonth] = React.useState(0);
 
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [showAdminModal, setShowAdminModal] = React.useState(false);
@@ -443,7 +436,7 @@ function App() {
 
         <AnimatePresence mode="wait">
           {activeTab === 'practical' && (
-            <PracticalTab key="practical" childInfo={childInfo} ageTimelineData={[]} setSelectedMilestone={setSelectedMilestone} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedTimelineMonth={selectedTimelineMonth} setSelectedTimelineMonth={setSelectedTimelineMonth} />
+            <PracticalTab key="practical" childInfo={childInfo} />
           )}
           {activeTab === 'welfare' && (
             <WelfareTab key="welfare" childInfo={childInfo} welfareItems={welfareItems} selectedWelfareStage={selectedWelfareStage} setSelectedWelfareStage={setSelectedWelfareStage} isLoadingWelfare={isLoadingWelfare} welfareRegion={welfareRegion} setWelfareRegion={setWelfareRegion} welfareSubRegion={welfareSubRegion} setWelfareSubRegion={setWelfareSubRegion} expandedWelfareId={expandedWelfareId} setExpandedWelfareId={setExpandedWelfareId} isLocatingWelfare={isLocatingWelfare} setIsLocatingWelfare={setIsLocatingWelfare} welfareLocationMsg={welfareLocationMsg} setWelfareLocationMsg={setWelfareLocationMsg} />
