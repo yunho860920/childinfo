@@ -20,7 +20,7 @@ const GrowthCard = ({
       <div className="mb-10 flex items-center justify-between">
         <div className="flex flex-col">
           <h3 className="text-[18px] font-black text-brand-gray-900 dark:text-white tracking-tight">우리 아이 성장 정보</h3>
-          <p className="text-[11px] font-bold text-brand-primary opacity-70 uppercase tracking-widest mt-1">2017 KCDC Standard</p>
+          <p className="text-[11px] font-bold text-blue-500 opacity-70 uppercase tracking-widest mt-1">2017 KCDC Standard</p>
         </div>
       </div>
 
@@ -34,7 +34,7 @@ const GrowthCard = ({
             strokeWidth={12}
             onShowChart={onShowChart}
             id="growth-gradient"
-            gradientColors={["#FF6B6B", "#FF8E8E"]}
+            gradientColors={["#3B82F6", "#60A5FA"]}
           >
             <div className="flex flex-col items-center">
               <span className="text-3xl font-black text-brand-gray-900 dark:text-white tracking-tighter">
@@ -117,7 +117,7 @@ const GrowthCard = ({
       <div className="mt-auto">
         <button 
           onClick={() => handleAddGrowthRecord({ date: new Date().toISOString().split('T')[0], height: childInfo.height, weight: childInfo.weight })}
-          className="w-full py-4 bg-brand-primary text-white rounded-[1.5rem] font-black shadow-lg shadow-brand-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-[13px]"
+          className="w-full py-4 bg-blue-500 text-white rounded-[1.5rem] font-black shadow-lg shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-[13px]"
         >
           <Save size={16} />
           성장 정보 기록장에 저장
