@@ -1,9 +1,10 @@
 // src/components/Dashboard/TemperatureCard.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Thermometer, ShieldAlert, ChevronRight, Info } from 'lucide-react';
+import { TrendingUp, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import ProgressRing from '../common/ProgressRing';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -11,84 +12,198 @@ function cn(...inputs) {
 
 const TemperatureCard = ({ 
   selectedTemp, 
-  setSelectedTemp 
+  setSelectedTemp,
+  onSaveTemp,
+  onShowChart
 }) => {
-  const getTempColor = (temp) => {
-    if (temp >= 38.5) return 'text-red-600 bg-red-500/10 border-red-500/20';
-    if (temp >= 37.5) return 'text-orange-600 bg-orange-500/10 border-orange-500/20';
-    return 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20';
+  const [hasTakenMeds, setHasTakenMeds] = React.useState(false);
+  const [medType, setMedType] = React.useState('none'); // 'none', 'acetaminophen', 'ibuprofen'
+  const [inputVal, setInputVal] = React.useState(selectedTemp.toString());
+
+  // Update local input when parent state changes
+  React.useEffect(() => {
+    if (parseFloat(inputVal) !== selectedTemp) {
+      setInputVal(selectedTemp.toString());
+    }
+  }, [selectedTemp]);
+
+  const handleTempChange = (val) => {
+    setInputVal(val);
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && parsed >= 30 && parsed <= 45) {
+      setSelectedTemp(parsed);
+    }
   };
 
   const getStatus = (temp) => {
-    if (temp >= 38.5) return { label: '고열', desc: '해열제 복용 및 전문의 상담 필요' };
-    if (temp >= 37.5) return { label: '미열', desc: '컨디션 체크 및 30분 뒤 재측정' };
-    return { label: '정상', desc: '체온이 적정 범위 내에 있습니다' };
+    const t = parseFloat(temp) || 36.5;
+    if (t >= 39.0) return { 
+      label: '고열 (주의)', 
+      desc: '즉시 소아과 내방 권장', 
+      color: 'text-red-500', 
+      bg: 'bg-red-500/5', 
+      action: '미온수 마사지 병행', 
+      meds: '해열제 복용 필수 (39도↑)' 
+    };
+    if (t >= 38.0) return { 
+      label: '발열 (관찰)', 
+      desc: '해열제 복용 후 추이 관찰', 
+      color: 'text-orange-500', 
+      bg: 'bg-orange-500/5', 
+      action: '충분한 수분 섭취', 
+      meds: '해열제 복용 권장 (38도↑)' 
+    };
+    if (t >= 37.5) return { 
+      label: '미열 (초기)', 
+      desc: '30분 간격으로 추가 측정', 
+      color: 'text-yellow-600', 
+      bg: 'bg-yellow-500/5', 
+      action: '얇은 옷으로 교체', 
+      meds: '컨디션에 따라 결정' 
+    };
+    return { 
+      label: '정상 체온', 
+      desc: '아이의 컨디션이 좋습니다', 
+      color: 'text-blue-500', 
+      bg: 'bg-blue-500/5', 
+      action: '평소대로 활동', 
+      meds: '복용 불필요' 
+    };
   };
 
   const status = getStatus(selectedTemp);
+  const tempPercentage = ((selectedTemp - 35) / (42 - 35)) * 100;
+  const isHighFever = selectedTemp >= 38;
 
   return (
-    <div className="bg-white dark:bg-apple-card p-6 md:p-8 rounded-[2.5rem] border border-brand-gray-100 dark:border-apple-border shadow-xl relative overflow-hidden group h-full flex flex-col justify-between">
-      {/* Header */}
-      <div className="relative z-10 flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
-            <Thermometer size={20} strokeWidth={2.5} />
+    <div className="bg-white dark:bg-apple-card p-8 rounded-[3rem] border border-[var(--apple-border)] shadow-soft relative flex flex-col h-full overflow-hidden">
+      {/* Header Row */}
+      <div className="flex items-center justify-between mb-10">
+        <div className="flex flex-col">
+          <h3 className="text-[18px] font-black text-brand-gray-900 dark:text-white tracking-tight">실시간 체온 피드백</h3>
+          <p className="text-[11px] font-bold text-blue-500 opacity-70 uppercase tracking-widest mt-1">KCDC Health Smart Care</p>
+        </div>
+      </div>
+
+      {/* Main Grid: Circle on Left, Inputs on Right */}
+      <div className="flex items-center gap-8 mb-8">
+        {/* Left: Progress Ring */}
+        <div className="shrink-0 scale-110 sm:scale-100">
+          <ProgressRing 
+            percentage={tempPercentage} 
+            size={120} 
+            strokeWidth={12}
+            onShowChart={onShowChart}
+            id="temp-gradient"
+            gradientColors={isHighFever ? ["#EF4444", "#F87171"] : ["#3B82F6", "#60A5FA"]}
+          >
+            <div className="flex flex-col items-center">
+              <div className="flex items-baseline gap-0.5">
+                <span className={cn("text-3xl font-black tracking-tighter", isHighFever ? "text-red-500" : "text-blue-500")}>
+                  {inputVal}
+                </span>
+                <span className={cn("text-xs font-black", isHighFever ? "text-red-500/60" : "text-blue-500/60")}>°C</span>
+              </div>
+              <span className={cn("text-[10px] font-black uppercase tracking-widest mt-0.5", isHighFever ? "text-red-400" : "text-blue-400")}>
+                {status.label}
+              </span>
+            </div>
+          </ProgressRing>
+        </div>
+
+        {/* Right: Info Area */}
+        <div className="flex-1 space-y-4">
+          {/* Temperature Numeric Input */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-black text-brand-gray-400 uppercase tracking-tight ml-1">현재 체온 입력</p>
+            <div className={cn("p-3 rounded-2xl border flex items-center justify-center h-12 transition-all", isHighFever ? "bg-red-50/30 border-red-200/50" : "bg-blue-50/30 border-blue-200/50")}>
+              <input 
+                type="number" 
+                step="0.1"
+                value={inputVal || ''} 
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => handleTempChange(e.target.value)}
+                className={cn("w-full bg-transparent border-none outline-none text-[15px] font-black text-center", isHighFever ? "text-red-500" : "text-blue-500")}
+              />
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-black text-brand-gray-900 dark:text-white leading-none tracking-tight">체온 가드</h3>
-            <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 mt-1 uppercase tracking-widest">Live Monitor</p>
+
+          {/* Guidelines Box */}
+          <div className={cn("p-4 rounded-2xl flex flex-col gap-1", status.bg)}>
+            <div className="flex items-center justify-between">
+              <span className={cn("text-[11px] font-black uppercase tracking-widest", status.color)}>{status.label}</span>
+              {selectedTemp >= 38 && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
+            </div>
+            <span className="text-[11px] font-bold text-brand-gray-500 dark:text-brand-gray-400 leading-tight">{status.desc}</span>
           </div>
         </div>
-        <div className={cn("px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border transition-colors", getTempColor(selectedTemp))}>
-          {status.label}
-        </div>
       </div>
 
-      {/* Main Temp Display */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-4">
-        <div className="flex items-start">
-          <span className={cn("text-6xl font-black tracking-tighter leading-none transition-colors", 
-            selectedTemp >= 38.5 ? 'text-red-500' : selectedTemp >= 37.5 ? 'text-orange-500' : 'text-brand-gray-900 dark:text-white'
-          )}>
-            {selectedTemp.toFixed(1)}
-          </span>
-          <span className="text-xl font-black text-brand-gray-300 dark:text-brand-gray-600 ml-1 mt-1">°C</span>
+      {/* Footer Area: Actions & Save */}
+      <div className="space-y-4 mt-auto">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-brand-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-black/[0.02]">
+            <p className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tight mb-1">상황별 대처</p>
+            <p className="text-[11px] font-bold text-brand-gray-900 dark:text-white leading-tight truncate">{status.action}</p>
+          </div>
+          <div className="bg-brand-gray-50 dark:bg-white/5 p-3 rounded-2xl border border-black/[0.02]">
+            <p className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tight mb-1">복용 가이드</p>
+            <p className={cn("text-[11px] font-bold leading-tight truncate", selectedTemp >= 38.5 ? "text-red-500" : "text-brand-gray-900 dark:text-white")}>{status.meds}</p>
+          </div>
         </div>
-        
-        <div className="mt-4 flex items-center gap-2 px-4 py-2 bg-brand-gray-50 dark:bg-apple-elevated rounded-2xl border border-brand-gray-100 dark:border-apple-border max-w-[90%] mx-auto">
-          <Info size={14} className="text-brand-gray-400 shrink-0" />
-          <p className="text-[13px] font-bold text-brand-gray-600 dark:text-brand-gray-300 leading-tight text-center">
-            {status.desc}
-          </p>
-        </div>
-      </div>
 
-      {/* Control Section */}
-      <div className="relative z-10 mt-6 pt-6 border-t border-brand-gray-50 dark:border-apple-border/50">
-        <div className="flex items-center justify-between mb-3 px-1">
-          <span className="text-[11px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase">온도 조절</span>
-          <span className="text-[11px] font-black text-brand-primary">35.0 - 42.0°C</span>
-        </div>
-        
-        <input 
-          type="range" min="35" max="42" step="0.1" value={selectedTemp} 
-          onChange={(e) => setSelectedTemp(parseFloat(e.target.value))}
-          className="w-full h-1.5 bg-brand-gray-100 dark:bg-apple-border rounded-lg appearance-none cursor-pointer accent-brand-primary" 
-        />
-        
-        <div className="flex justify-between text-[10px] font-black text-brand-gray-300 dark:text-brand-gray-600 mt-2 px-0.5">
-          <span>Low</span>
-          <span>Normal</span>
-          <span>High</span>
-        </div>
-      </div>
+        {/* Meds Selection */}
+        <div className="space-y-2">
+          <div 
+            onClick={() => {
+              setHasTakenMeds(!hasTakenMeds);
+              if (!hasTakenMeds) setMedType('acetaminophen');
+              else setMedType('none');
+            }}
+            className="flex items-center gap-3 p-3 bg-brand-gray-50 dark:bg-white/5 rounded-2xl border border-black/[0.02] cursor-pointer hover:bg-brand-gray-100 transition-colors"
+          >
+            <div className={cn("w-5 h-5 rounded-md border flex items-center justify-center transition-all", hasTakenMeds ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-apple-card border-brand-gray-200 dark:border-apple-border")}>
+              {hasTakenMeds && <CheckCircle2 size={14} />}
+            </div>
+            <span className="text-[12px] font-bold text-brand-gray-600 dark:text-brand-gray-300">현재 해열제 복용함</span>
+          </div>
 
-      {/* Decorative Gradient */}
-      <div className={cn(
-        "absolute bottom-0 right-0 w-32 h-32 blur-[60px] opacity-10 transition-colors",
-        selectedTemp >= 37.5 ? 'bg-red-500' : 'bg-emerald-500'
-      )} />
+          {hasTakenMeds && (
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-2 gap-2 pl-1"
+            >
+              <button 
+                onClick={() => setMedType('acetaminophen')}
+                className={cn("py-2.5 px-3 rounded-xl text-[11px] font-black transition-all border", medType === 'acetaminophen' ? "bg-emerald-500 text-white border-emerald-500" : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 border-transparent")}
+              >
+                아세트아미노펜
+              </button>
+              <button 
+                onClick={() => setMedType('ibuprofen')}
+                className={cn("py-2.5 px-3 rounded-xl text-[11px] font-black transition-all border", medType === 'ibuprofen' ? "bg-emerald-500 text-white border-emerald-500" : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 border-transparent")}
+              >
+                이부프로펜 계열
+              </button>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Save Button */}
+        <button 
+          onClick={() => {
+            const noteText = medType === 'acetaminophen' ? "아세트아미노펜 복용" : medType === 'ibuprofen' ? "이부프로펜 계열 복용" : "특이사항 없음";
+            onSaveTemp(selectedTemp, noteText, medType);
+            setHasTakenMeds(false);
+            setMedType('none');
+          }}
+          className="w-full py-4 bg-blue-500 text-white rounded-[1.5rem] font-black text-[13px] shadow-lg shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+        >
+          <Save size={14} />
+          현재 체온 데이터 저장
+        </button>
+      </div>
     </div>
   );
 };

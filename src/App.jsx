@@ -1,18 +1,18 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, 
-  Lock, 
-  User, 
-  ChevronRight,
-  ShieldAlert,
-  Calendar,
+  X,
+  Moon,
+  Settings,
+  BookOpen,
+  ShieldCheck,
   Layers,
   HeartPulse,
   MapPin,
   MessageCircle,
-  Bell,
-  X
+  Lock,
+  Check,
+  Thermometer
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,6 +27,7 @@ import FacilitiesTab from './components/Tabs/FacilitiesTab';
 import ConsultTab from './components/Tabs/ConsultTab';
 import MilestoneModal from './components/Modals/MilestoneModal';
 import GrowthChartModal from './components/GrowthChartModal';
+import TemperatureChartModal from './components/Dashboard/TemperatureChartModal';
 import ThemeToggle from './components/common/ThemeToggle';
 
 // Services & Utils
@@ -53,7 +54,7 @@ function App() {
     } catch (e) { return true; }
     return true;
   });
-  const [activeTab, setActiveTab] = React.useState('practical');
+  const [activeTab, setActiveTab] = React.useState('health');
   const [logoClickCount, setLogoClickCount] = React.useState(0);
   const [logoLastClick, setLogoLastClick] = React.useState(0);
   const [childInfo, setChildInfo] = React.useState(() => {
@@ -87,12 +88,33 @@ function App() {
     return [];
   });
   const [showGrowthChart, setShowGrowthChart] = React.useState(false);
-  const [showSaveToast, setShowSaveToast] = React.useState(false);
+
+  const [tempRecords, setTempRecords] = React.useState(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_temp_history') : null;
+      if (saved) return JSON.parse(saved);
+    } catch (e) { return []; }
+    return [];
+  });
+  const [showTempChart, setShowTempChart] = React.useState(false);
+
+  const [toast, setToast] = React.useState({ show: false, message: '', type: 'info' });
+  const triggerToast = (message, type = 'info') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3000);
+  };
 
   const [selectedHealthCategory, setSelectedHealthCategory] = React.useState('예방접종 일정');
   const [completedVaccines, setCompletedVaccines] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_vaccines') : null;
+      if (saved) return JSON.parse(saved);
+    } catch (e) { return {}; }
+    return {};
+  });
+  const [completedMilestones, setCompletedMilestones] = React.useState(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_milestones') : null;
       if (saved) return JSON.parse(saved);
     } catch (e) { return {}; }
     return {};
@@ -152,7 +174,6 @@ function App() {
   const [pin, setPin] = React.useState('');
   const [pinAttempts, setPinAttempts] = React.useState(0);
   const [isLocked, setIsLocked] = React.useState(false);
-  const [showToast, setShowToast] = React.useState(null);
 
   // --- Effects ---
   React.useEffect(() => {
@@ -210,14 +231,34 @@ function App() {
     setGrowthRecords(newRecords);
     localStorage.setItem('childinfo_growth_history', JSON.stringify(newRecords));
     setChildInfo(prev => ({ ...prev, height: rec.height, weight: rec.weight }));
-    setShowSaveToast(true);
-    setTimeout(() => setShowSaveToast(false), 3000);
+    triggerToast("성장 정보가 저장되었습니다.");
+  };
+
+  const handleSaveTempRecord = (temp, notes = "", medType = "none") => {
+    const newRec = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      temp,
+      notes,
+      medType
+    };
+    const newRecords = [newRec, ...tempRecords].slice(0, 50);
+    setTempRecords(newRecords);
+    localStorage.setItem('childinfo_temp_history', JSON.stringify(newRecords));
+    triggerToast("체온 정보가 저장되었습니다.");
   };
 
   const toggleVaccine = (id) => {
     const newVaccines = { ...completedVaccines, [id]: !completedVaccines[id] };
     setCompletedVaccines(newVaccines);
     localStorage.setItem('childinfo_vaccines', JSON.stringify(newVaccines));
+  };
+
+  const toggleMilestone = (id) => {
+    const newMilestones = { ...completedMilestones, [id]: !completedMilestones[id] };
+    setCompletedMilestones(newMilestones);
+    localStorage.setItem('childinfo_milestones', JSON.stringify(newMilestones));
+    if (!completedMilestones[id]) triggerToast("우리 아이 성장을 응원합니다! 🎉", "success");
   };
 
   const handleGeolocation = () => {
@@ -274,8 +315,7 @@ function App() {
       setIsAdmin(true);
       setShowAdminModal(false);
       setPin('');
-      setShowToast({ type: 'success', text: '새로운 관리자 PIN이 설정되었습니다.' });
-      setTimeout(() => setShowToast(null), 3000);
+      triggerToast('새로운 관리자 PIN이 설정되었습니다.', 'success');
       return;
     }
 
@@ -285,8 +325,7 @@ function App() {
       setShowAdminModal(false);
       setPin('');
       setPinAttempts(0);
-      setShowToast({ type: 'success', text: '관리자 모드가 활성화되었습니다.' });
-      setTimeout(() => setShowToast(null), 3000);
+      triggerToast('관리자 모드가 활성화되었습니다.', 'success');
     } else {
       const newAttempts = pinAttempts + 1;
       setPinAttempts(newAttempts);
@@ -303,8 +342,7 @@ function App() {
     localStorage.removeItem('childinfo_admin');
     setIsAdmin(false);
     setShowAdminModal(true);
-    setShowToast({ type: 'info', text: 'PIN이 초기화되었습니다. 새로 입력하세요.' });
-    setTimeout(() => setShowToast(null), 3000);
+    triggerToast('PIN이 초기화되었습니다. 새로 입력하세요.', 'info');
   };
 
   const handleLogoClick = () => {
@@ -338,76 +376,67 @@ function App() {
   return (
     <div className="min-h-screen bg-brand-gray-50 dark:bg-apple-black transition-colors duration-500 selection:bg-brand-primary selection:text-white">
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-apple-black/80 backdrop-blur-xl border-b border-brand-gray-100 dark:border-apple-border">
-        <div className="max-w-7xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={handleLogoClick}>
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-brand-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-              <ShieldCheck className="text-white" size={24} strokeWidth={2.5} />
+            <div className="w-12 h-12 bg-white border border-brand-gray-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-all shadow-sm">
+              <ShieldCheck className="text-[#FF4B4B]" size={26} />
             </div>
             <div>
-              <h1 className="text-lg md:text-xl font-black tracking-tight leading-none text-brand-gray-900 dark:text-white">
-                Child<span className="text-brand-primary">Info</span>
+              <h1 className="text-xl font-black tracking-tight text-brand-gray-900 dark:text-white flex items-center">
+                Child<span className="text-[#FF4B4B]">Info</span>
               </h1>
-              <p className="text-[10px] md:text-xs font-bold text-brand-gray-400 dark:text-brand-gray-500 mt-1 uppercase tracking-widest">Growth & Safety</p>
+              <p className="text-[10px] font-bold text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest leading-none mt-1">Growth & Safety</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
-            <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
-            <AnimatePresence>
-              {isAdmin && (
-                <div className="flex items-center gap-2">
-                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-600">ADMIN MODE</span>
-                  </motion.div>
-                  <button onClick={handleResetPin} className="p-2 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-all">PIN 초기화</button>
-                </div>
-              )}
-            </AnimatePresence>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setDarkMode(!darkMode)} className="p-3 text-brand-gray-400 hover:text-brand-gray-600 transition-colors">
+              <Moon size={24} />
+            </button>
+            <button className="p-3 bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 rounded-full hover:text-brand-gray-600 transition-colors">
+              <Settings size={24} />
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-8 md:space-y-12 pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8 items-stretch">
-          <div className="lg:col-span-2">
-            <GrowthCard 
-              childInfo={childInfo} 
-              setChildInfo={setChildInfo} 
-              percentile={percentile} 
-              growthRecords={growthRecords}
-              handleBirthDateChange={handleBirthDateChange} 
-              handleAddGrowthRecord={handleAddGrowthRecord} 
-              onShowChart={() => setShowGrowthChart(true)}
-            />
-          </div>
-          <div className="lg:col-span-1">
-            <TemperatureCard selectedTemp={selectedTemp} setSelectedTemp={setSelectedTemp} />
-          </div>
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 pb-48">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          <GrowthCard 
+            childInfo={childInfo} 
+            setChildInfo={setChildInfo} 
+            percentile={percentile} 
+            handleBirthDateChange={handleBirthDateChange} 
+            handleAddGrowthRecord={handleAddGrowthRecord} 
+            onShowChart={() => setShowGrowthChart(true)}
+          />
+          <TemperatureCard 
+            selectedTemp={selectedTemp} 
+            setSelectedTemp={setSelectedTemp} 
+            onSaveTemp={handleSaveTempRecord}
+            onShowChart={() => setShowTempChart(true)}
+          />
         </div>
 
-        <nav className="flex items-center justify-center gap-4 md:gap-8 py-4 sticky top-20 z-40">
+        <nav className="fixed bottom-8 left-4 right-4 h-24 bg-white/95 dark:bg-apple-card/95 backdrop-blur-xl rounded-[2.5rem] border border-[var(--apple-border)] shadow-2xl flex items-center justify-around px-4 z-50 animate-in slide-in-from-bottom-10 duration-700">
           {[
-            { id: 'practical', label: '양육', icon: <Calendar size={22} /> },
-            { id: 'welfare', label: '복지', icon: <Layers size={22} /> },
-            { id: 'health', label: '건강', icon: <HeartPulse size={22} /> },
-            { id: 'facilities', label: '시설', icon: <MapPin size={22} /> },
-            { id: 'consult', label: '상담', icon: <MessageCircle size={22} /> },
+            { id: 'practical', label: '양육 가이드', icon: <BookOpen size={24} /> },
+            { id: 'welfare', label: '복지 혜택', icon: <Layers size={24} /> },
+            { id: 'health', label: '건강 정보', icon: <HeartPulse size={24} /> },
+            { id: 'facilities', label: '시설 검색', icon: <MapPin size={24} /> },
+            { id: 'consult', label: '전문가 상담', icon: <MessageCircle size={24} /> },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1 transition-all duration-300",
-                activeTab === tab.id ? "text-brand-primary scale-110" : "text-brand-gray-400 dark:text-brand-gray-500 hover:text-brand-gray-600"
+                "flex flex-col items-center gap-1.5 transition-all duration-500 px-4 py-2 rounded-3xl",
+                activeTab === tab.id ? "text-brand-primary bg-brand-primary/[0.03] ring-1 ring-brand-primary/10" : "text-brand-gray-400"
               )}
             >
-              <div className={cn(
-                "p-2 rounded-2xl transition-all",
-                activeTab === tab.id ? "bg-brand-primary/10 shadow-sm" : ""
-              )}>
+              <div className="transition-transform duration-500 active:scale-90">
                 {tab.icon}
               </div>
-              <span className="text-[10px] font-black">{tab.label}</span>
+              <span className="text-[10px] font-black tracking-tight">{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -420,7 +449,16 @@ function App() {
             <WelfareTab key="welfare" childInfo={childInfo} welfareItems={welfareItems} selectedWelfareStage={selectedWelfareStage} setSelectedWelfareStage={setSelectedWelfareStage} isLoadingWelfare={isLoadingWelfare} welfareRegion={welfareRegion} setWelfareRegion={setWelfareRegion} welfareSubRegion={welfareSubRegion} setWelfareSubRegion={setWelfareSubRegion} expandedWelfareId={expandedWelfareId} setExpandedWelfareId={setExpandedWelfareId} isLocatingWelfare={isLocatingWelfare} setIsLocatingWelfare={setIsLocatingWelfare} welfareLocationMsg={welfareLocationMsg} setWelfareLocationMsg={setWelfareLocationMsg} />
           )}
           {activeTab === 'health' && (
-            <HealthTab key="health" childInfo={childInfo} selectedHealthCategory={selectedHealthCategory} setSelectedHealthCategory={setSelectedHealthCategory} completedVaccines={completedVaccines} toggleVaccine={toggleVaccine} />
+            <HealthTab 
+              key="health" 
+              childInfo={childInfo} 
+              selectedHealthCategory={selectedHealthCategory} 
+              setSelectedHealthCategory={setSelectedHealthCategory} 
+              completedVaccines={completedVaccines} 
+              toggleVaccine={toggleVaccine} 
+              completedMilestones={completedMilestones}
+              toggleMilestone={toggleMilestone}
+            />
           )}
           {activeTab === 'facilities' && (
             <FacilitiesTab key="facilities" searchQuery={searchQuery} setSearchQuery={setSearchQuery} facilityPage={facilityPage} setFacilityPage={setFacilityPage} selectedRegion={selectedRegion} handleRegionChange={handleRegionChange} selectedSubRegion={selectedSubRegion} setSelectedSubRegion={setSelectedSubRegion} selectedDong={selectedDong} setSelectedDong={setSelectedDong} filteredFacilities={filteredFacilities} isLocating={isLocating} locationMsg={locationMsg} setLocationMsg={setLocationMsg} availableSubRegions={availableSubRegions} handleGeolocation={handleGeolocation} facilities={facilities} />
@@ -432,6 +470,22 @@ function App() {
       </main>
 
       <AnimatePresence>
+        {showGrowthChart && (
+          <GrowthChartModal 
+            isOpen={showGrowthChart} 
+            onClose={() => setShowGrowthChart(false)} 
+            records={growthRecords} 
+            childInfo={childInfo} 
+          />
+        )}
+        {showTempChart && (
+          <TemperatureChartModal 
+            isOpen={showTempChart} 
+            onClose={() => setShowTempChart(false)} 
+            records={tempRecords} 
+            childInfo={childInfo} 
+          />
+        )}
         {showAdminModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdminModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -448,6 +502,22 @@ function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[200] bg-brand-gray-900/90 backdrop-blur-xl text-white px-6 py-3 rounded-2xl font-bold shadow-2xl flex items-center gap-3 border border-white/10"
+          >
+            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white">
+              <Check size={14} strokeWidth={4} />
+            </div>
+            {toast.message}
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

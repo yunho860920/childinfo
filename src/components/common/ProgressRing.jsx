@@ -7,11 +7,14 @@ const ProgressRing = ({
   percentage, 
   size = 180, 
   strokeWidth = 14, 
-  onShowChart
+  onShowChart,
+  gradientColors = ["#FF6B6B", "#FF8E8E"],
+  id = "progress-gradient",
+  children
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
+  const offset = circumference - (Math.max(0, Math.min(100, percentage)) / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center justify-center relative group/ring">
@@ -29,7 +32,7 @@ const ProgressRing = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="url(#gradient)"
+          stroke={`url(#${id})`}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
@@ -39,31 +42,27 @@ const ProgressRing = ({
           fill="transparent"
         />
         <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FF6B6B" />
-            <stop offset="100%" stopColor="#FF8E8E" />
+          <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={gradientColors[0]} />
+            <stop offset="100%" stopColor={gradientColors[1]} />
           </linearGradient>
         </defs>
       </svg>
       
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-black text-brand-gray-900 dark:text-white tracking-tighter">
-          {percentage}%
-        </span>
-        <span className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest mt-1">
-          성장 백분위
-        </span>
+        {children}
         
-        {/* 'View Chart' button moved inside the ring as requested */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onShowChart}
-          className="mt-4 px-3 py-1.5 bg-brand-primary text-white text-[10px] font-black rounded-full shadow-lg shadow-brand-primary/30 flex items-center gap-1.5 hover:bg-brand-primary/90 transition-colors"
-        >
-          <TrendingUp size={12} />
-          차트 보기
-        </motion.button>
+        {onShowChart && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onShowChart}
+            className="mt-3 px-3 py-1.5 bg-brand-primary text-white text-[10px] font-black rounded-full shadow-lg shadow-brand-primary/30 flex items-center gap-1.5 hover:bg-brand-primary/90 transition-colors"
+          >
+            <TrendingUp size={12} />
+            차트 보기
+          </motion.button>
+        )}
       </div>
     </div>
   );
