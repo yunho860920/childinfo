@@ -101,18 +101,24 @@ function mapFacilityType(rawType, name) {
   const t = (rawType + name).toLowerCase();
   if (t.includes('어린이집')) return '어린이집';
   if (t.includes('가족센터') || t.includes('건강가정')) return '가족센터';
-  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과')) return '병원·상담';
-  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합')) return '돌봄·지원센터';
+  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신')) return '병원·상담';
+  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합') || t.includes('다함께') || t.includes('지역아동')) return '돌봄·지원센터';
   return '돌봄·지원센터';
 }
 
 export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
   if (!facilities) return [];
+  
   return facilities.filter(f => {
+    // Normalization: Ensure f.type is matched correctly if not already normalized
+    const normalizedType = f.type && ['어린이집', '돌봄·지원센터', '가족센터', '병원·상담'].includes(f.type) 
+      ? f.type 
+      : mapFacilityType(f.type || '', f.name || '');
+
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
     const matchDong = !dong || dong === '전체' || f.dong === dong;
-    const matchCategory = category === '전체' || f.type === category;
+    const matchCategory = category === '전체' || normalizedType === category;
     
     const lowerQuery = (query || "").toLowerCase();
     const matchQuery = !query || 
