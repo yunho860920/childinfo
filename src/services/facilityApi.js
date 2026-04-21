@@ -38,7 +38,7 @@ export async function fetchChildFacilities() {
   let apiFacilities = [];
 
   if (apiKey) {
-    const pagesToFetch = [1, 2, 10, 80]; // Broad sampling
+    const pagesToFetch = [1, 2, 10, 80];
     try {
       const requests = pagesToFetch.map(page => {
         const url = `https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire?serviceKey=${encodeURIComponent(apiKey)}&pageNo=${page}&numOfRows=200&_type=json`;
@@ -54,10 +54,9 @@ export async function fetchChildFacilities() {
         if (!Array.isArray(items)) items = [items];
         
         const filtered = items.filter(fac => {
-          const type = (fac.fcltKindNm || "").toLowerCase();
           const name = (fac.fcltNm || "").toLowerCase();
           if (name.includes('노인') || name.includes('경로')) return false;
-
+          const type = (fac.fcltKindNm || "").toLowerCase();
           const keywords = ['아동', '육아', '어린이', '가족', '키움', '보육', '다함께', '상담', '심리', '병원'];
           return keywords.some(k => type.includes(k) || name.includes(k));
         });
@@ -82,8 +81,13 @@ export async function fetchChildFacilities() {
     } catch (e) { console.error(e); }
   }
 
-  // Merge: Local Data is Priority
-  const allData = [...SYSTEM_DATABASE, ...apiFacilities];
+  // Normalize System Database types to match UI categories
+  const normalizedSystem = SYSTEM_DATABASE.map(fac => ({
+    ...fac,
+    type: mapFacilityType(fac.type || '', fac.name)
+  }));
+
+  const allData = [...normalizedSystem, ...apiFacilities];
   const seenNames = new Set();
   return allData.filter(fac => {
     const uniqueKey = `${fac.name}-${fac.region}-${fac.subRegion}`;
@@ -97,8 +101,8 @@ function mapFacilityType(rawType, name) {
   const t = (rawType + name).toLowerCase();
   if (t.includes('어린이집')) return '어린이집';
   if (t.includes('가족센터') || t.includes('건강가정')) return '가족센터';
-  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달')) return '병원·상담';
-  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터')) return '돌봄·지원센터';
+  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과')) return '병원·상담';
+  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합')) return '돌봄·지원센터';
   return '돌봄·지원센터';
 }
 
@@ -142,31 +146,7 @@ function parseAggressiveRegion(addrStr, facName) {
     if (facName.includes('서울')) region = '서울';
     else if (facName.includes('경기')) region = '경기';
     else if (facName.includes('부산')) region = '부산';
-  }
-  return { region, subRegion, dong };
-}
-
-function parseAggressiveRegion(addrStr, facName) {
-  const parts = (addrStr || "").split(" ").filter(p => p.trim());
-  let region = '기타';
-  let subRegion = '전체';
-  let dong = '전체';
-
-  if (parts.length > 0) {
-    const first = parts[0];
-    for (const r in SIGGUNGU_DICT) {
-      if (first.includes(r)) {
-        region = r;
-        break;
-      }
-    }
-    if (parts.length >= 2) subRegion = parts[1];
-    if (parts.length >= 3) dong = parts[2];
-  }
-
-  if (region === '기타') {
-    if (facName.includes('서울')) region = '서울';
-    else if (facName.includes('부산')) region = '부산';
+    else if (facName.includes('인천')) region = '인천';
   }
   return { region, subRegion, dong };
 }

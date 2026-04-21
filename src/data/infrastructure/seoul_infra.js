@@ -106,5 +106,15 @@ export const seoulInfra = [
 
   // --- 강동구 ---
   { id: 's-kd-01', name: '강동구 가족센터', type: '가족센터', region: '서울', subRegion: '강동구', dong: '전체', address: '서울 강동구 양재대로 138길 41', mapUrl: 'https://map.kakao.com/?q=강동구+가족센터' },
-  { id: 's-kd-02', name: '강동구 육아종합지원센터', type: '육아종합지원센터', region: '서울', subRegion: '강동구', dong: '전체', address: '서울 강동구 동남로 71길 32', mapUrl: 'https://map.kakao.com/?q=강동구+육아종합지원센터' }
+  { id: 's-kd-02', name: '강동구 육아종합지원센터', type: '육아종합지원센터', region: '서울', subRegion: '강동구', dong: '전체', address: '서울 강동구 동남로 71길 32', mapUrl: 'https://map.kakao.com/?q=강동구+육아종합지원센터' },
+
+  // --- 어린이집 (서울 권역 주요 거점) ---
+  { id: 's-day-01', name: '종로구청 어린이집', type: '어린이집', region: '서울', subRegion: '종로구', dong: '수송동', address: '서울 종로구 삼봉로 43', mapUrl: 'https://map.kakao.com/?q=종로구청+어린이집' },
+  { id: 's-day-02', name: '성동구청 어린이집', type: '어린이집', region: '서울', subRegion: '성동구', dong: '행당동', address: '서울 성동구 고산자로 270', mapUrl: 'https://map.kakao.com/?q=성동구청+어린이집' },
+  { id: 's-day-03', name: '강남구청 어린이집', type: '어린이집', region: '서울', subRegion: '강남구', dong: '삼성동', address: '서울 강남구 학동로 426', mapUrl: 'https://map.kakao.com/?q=강남구청+어린이집' },
+  { id: 's-day-04', name: '송파구청 어린이집', type: '어린이집', region: '서울', subRegion: '송파구', dong: '신천동', address: '서울 송파구 올림픽로 326', mapUrl: 'https://map.kakao.com/?q=송파구청+어린이집' },
+  { id: 's-day-05', name: '서초구청 어린이집', type: '어린이집', region: '서울', subRegion: '서초구', dong: '서초동', address: '서울 서초구 남부순환로 2584', mapUrl: 'https://map.kakao.com/?q=서초구청+어린이집' },
+  { id: 's-day-06', name: '영등포구청 어린이집', type: '어린이집', region: '서울', subRegion: '영등포구', dong: '당산동', address: '서울 영등포구 당산로 123', mapUrl: 'https://map.kakao.com/?q=영등포구청+어린이집' },
+  { id: 's-day-07', name: '마포구청 어린이집', type: '어린이집', region: '서울', subRegion: '마포구', dong: '성산동', address: '서울 마포구 월드컵로 212', mapUrl: 'https://map.kakao.com/?q=마포구청+어린이집' },
+  { id: 's-day-08', name: '구로구청 어린이집', type: '어린이집', region: '서울', subRegion: '구로구', dong: '구로동', address: '서울 구로구 구로중앙로 28길 66', mapUrl: 'https://map.kakao.com/?q=구로구청+어린이집' }
 ];
