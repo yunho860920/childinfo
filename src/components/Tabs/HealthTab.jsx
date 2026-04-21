@@ -25,9 +25,10 @@ const HealthTab = ({
     { label: '11~12세', min: 132, max: 144 },
   ];
 
-  const filteredVax = vaccinationSchedule.filter(s => {
+  const filteredVax = (vaccinationSchedule || []).filter(s => {
     if (vaxFilter === '전체') return true;
     const group = vaxAgeGroups.find(g => g.label === vaxFilter);
+    if (!group) return true;
     return s.months >= group.min && s.months <= group.max;
   });
 
@@ -45,7 +46,7 @@ const HealthTab = ({
         </div>
         
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 w-full md:w-auto">
-          {healthCategories.map((cat) => (
+          {(healthCategories || []).map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedHealthCategory(cat)}
@@ -66,12 +67,12 @@ const HealthTab = ({
         <div className="space-y-6">
           {(() => {
             const { total, done, pct } = React.useMemo(() => {
-              const totalVax = vaccinationSchedule.reduce((acc, curr) => acc + curr.vaccines.length, 0);
+              const totalVax = (vaccinationSchedule || []).reduce((acc, curr) => acc + (curr?.vaccines?.length || 0), 0);
               const doneVax = Object.values(completedVaccines || {}).filter(Boolean).length;
               return {
                 total: totalVax,
                 done: doneVax,
-                pct: Math.round((doneVax / totalVax) * 100)
+                pct: totalVax > 0 ? Math.round((doneVax / totalVax) * 100) : 0
               };
             }, [completedVaccines]);
 
@@ -92,7 +93,7 @@ const HealthTab = ({
           })()}
 
           <div className="flex gap-2 py-2 overflow-x-auto no-scrollbar">
-            {vaxAgeGroups.map(group => (
+            {(vaxAgeGroups || []).map(group => (
               <button
                 key={group.label}
                 onClick={() => setVaxFilter(group.label)}
@@ -109,7 +110,7 @@ const HealthTab = ({
           </div>
 
           <div className="space-y-6">
-            {filteredVax.map((schedule, index) => {
+            {(filteredVax || []).map((schedule, index) => {
               const isCurrent = (childInfo?.months || 0) === schedule.months;
               return (
                 <div key={index} className="relative pl-6 border-l-2 border-brand-gray-100 dark:border-apple-border ml-2 space-y-4">
@@ -119,7 +120,7 @@ const HealthTab = ({
                     {isCurrent && <span className="text-[10px] bg-brand-primary/10 px-2 py-0.5 rounded-full">진행 중</span>}
                   </h4>
                   <div className="grid gap-3">
-                    {schedule.vaccines.map((v, i) => {
+                    {(schedule.vaccines || []).map((v, i) => {
                       const vId = `${schedule.months}m-${v.name}-${v.dose}`;
                       const isDone = !!completedVaccines[vId];
                       return (
@@ -158,7 +159,7 @@ const HealthTab = ({
              </div>
            </div>
 
-           {growthMilestones.map((group, idx) => {
+           {(growthMilestones || []).map((group, idx) => {
              const childMonths = childInfo?.months || 0;
              const isOverdue = childMonths > group.months;
              return (
@@ -170,7 +171,7 @@ const HealthTab = ({
                    )}
                  </div>
                  <div className="grid gap-3">
-                   {group.items.map(milestone => {
+                   {(group?.items || []).map(milestone => {
                      const isChecked = !!completedMilestones[milestone.id];
                      const showCaution = !isChecked && childMonths > (group.months + 2);
                      return (
@@ -185,7 +186,7 @@ const HealthTab = ({
                                <span className="text-[9px] font-black text-brand-gray-400 bg-brand-gray-50 px-1.5 py-0.5 rounded whitespace-nowrap">{milestone.type}</span>
                              </div>
                              {isChecked ? (
-                               <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full whitespace-nowrap">On Track</span>
+                               <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full whitespace-nowrap text-center">On Track</span>
                              ) : showCaution ? (
                                <div className="flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-full whitespace-nowrap">
                                  <ShieldAlert size={10} />
@@ -208,15 +209,15 @@ const HealthTab = ({
           <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] overflow-hidden shadow-soft">
             <div className="p-6 bg-blue-500/5 border-b border-blue-500/10">
               <h4 className="text-base font-black text-blue-600 dark:text-blue-400 inline-flex items-center gap-2">
-                🌡️ {temperatureGuide.title}
+                🌡️ {temperatureGuide?.title}
               </h4>
-              <p className="text-[11px] text-blue-500/70 mt-1 font-bold">{temperatureGuide.desc}</p>
+              <p className="text-[11px] text-blue-500/70 mt-1 font-bold">{temperatureGuide?.desc}</p>
             </div>
             <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
                 <p className="text-[11px] font-black text-brand-gray-400 uppercase tracking-widest mb-4">측정 부위별 정상 범위</p>
                 <div className="space-y-2">
-                  {temperatureGuide.measureSites.map((s, i) => (
+                  {(temperatureGuide?.measureSites || []).map((s, i) => (
                     <div key={i} className="flex justify-between items-center py-3 px-4 bg-brand-gray-50 dark:bg-apple-elevated rounded-2xl">
                       <div>
                         <p className="text-[13px] font-black text-brand-gray-900 dark:text-white">{s.site}</p>
@@ -230,7 +231,7 @@ const HealthTab = ({
               <div>
                 <p className="text-[11px] font-black text-brand-gray-400 uppercase tracking-widest mb-4">발열 단계별 조치</p>
                 <div className="space-y-2">
-                  {temperatureGuide.feverLevels.map((f, i) => {
+                  {(temperatureGuide?.feverLevels || []).map((f, i) => {
                     const colorMap = {
                       green: 'bg-green-50 text-green-700',
                       yellow: 'bg-yellow-50 text-yellow-700',
@@ -255,9 +256,9 @@ const HealthTab = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {(ageHealthData || [])
-            .filter(ageGroup => ageGroup.ageLabel === selectedHealthCategory)
-            .flatMap(ageGroup => ageGroup.conditions.map((cond, i) => (
-              <div key={i} className={cn('bg-white dark:bg-apple-card p-6 border rounded-[2rem] shadow-soft group hover:border-brand-primary/30 transition-all cursor-default', ageGroup.border.replace('border-', 'border-opacity-40 border-'))}>
+            .filter(ageGroup => ageGroup?.ageLabel === selectedHealthCategory)
+            .flatMap(ageGroup => (ageGroup?.conditions || []).map((cond, i) => (
+              <div key={i} className={cn('bg-white dark:bg-apple-card p-6 border rounded-[2rem] shadow-soft group hover:border-brand-primary/30 transition-all cursor-default', (ageGroup?.border || '').replace('border-', 'border-opacity-40 border-'))}>
                 <div className="flex gap-4">
                   <div className={cn(
                     'shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-lg',
