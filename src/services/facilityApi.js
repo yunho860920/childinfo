@@ -97,42 +97,53 @@ export async function fetchChildFacilities() {
   });
 }
 
-function mapFacilityType(rawType, name) {
-  const t = (rawType + name).toLowerCase();
-  // Exact match for UI constants: '전체', '어린이집', '돌봄·지원센터', '가족센터', '병원·상담'
+// Robust category normalization map
+const CATEGORY_MAP = {
+  '어린이집': ['어린이집', '보육', '유치원'],
+  '가족센터': ['가족센터', '건강가정', '다문화'],
+  '병원·상담': ['병원', '의원', '상담', '발달', '소아과', '정신', '치료'],
+  '돌봄·지원센터': ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무']
+};
+
+function normalizeCategory(typeStr, nameStr) {
+  const t = (typeStr + nameStr).toLowerCase();
   if (t.includes('어린이집')) return '어린이집';
   if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return '가족센터';
   if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신')) return '병원·상담';
   
-  // 돌봄·지원센터 (Includes support centers, childcare info centers, Kium hubs, etc.)
-  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합') || t.includes('다함께') || t.includes('지역아동') || t.includes('꿈나무')) {
-    return '돌봄·지원센터';
+  for (const k of CATEGORY_MAP['돌봄·지원센터']) {
+    if (t.includes(k)) return '돌봄·지원센터';
   }
-  
-  return '돌봄·지원센터';
+  return '돌봄·지원센터'; // Default
 }
 
 export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
   if (!facilities) return [];
   
   return facilities.filter(f => {
-    // Crucial: Normalize type for filtering to match UI category strings EXACTLY
-    const normalizedType = mapFacilityType(f.type || '', f.name || '');
+    // 1. Category Matching (Normalization)
+    const facilityCat = normalizeCategory(f.type || '', f.name || '');
+    const matchCategory = category === '전체' || facilityCat === category;
 
+    // 2. Region Matching
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
     const matchDong = !dong || dong === '전체' || f.dong === dong;
-    const matchCategory = category === '전체' || normalizedType === category;
     
+    // 3. Search Query Matching
     const lowerQuery = (query || "").toLowerCase();
     const matchQuery = !query || 
       (f.name || "").toLowerCase().includes(lowerQuery) || 
       (f.address || "").toLowerCase().includes(lowerQuery) ||
-      (normalizedType).toLowerCase().includes(lowerQuery);
+      (facilityCat).toLowerCase().includes(lowerQuery);
       
     return matchRegion && matchSub && matchDong && matchCategory && matchQuery;
   });
-};
+}
+
+function mapFacilityType(rawType, name) {
+  return normalizeCategory(rawType, name);
+}
 
 function parseAggressiveRegion(addrStr, facName) {
   const parts = (addrStr || "").split(" ").filter(p => p.trim());
@@ -148,7 +159,15 @@ function parseAggressiveRegion(addrStr, facName) {
         break;
       }
     }
-    if (parts.length >= 2) subRegion = parts[1];
+    // Specific fix for Seoul districts
+    if (region === '서울' && parts.length >= 2) {
+      const second = parts[1];
+      if (second.endsWith('구')) subRegion = second;
+      else if (parts[2] && parts[2].endsWith('구')) subRegion = parts[2];
+    } else {
+      if (parts.length >= 2) subRegion = parts[1];
+    }
+    
     if (parts.length >= 3) dong = parts[2];
   }
 
