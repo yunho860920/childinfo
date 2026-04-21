@@ -134,6 +134,7 @@ function App() {
   const [selectedDong, setSelectedDong] = React.useState('전체');
   const [isLocating, setIsLocating] = React.useState(false);
   const [locationMsg, setLocationMsg] = React.useState(null);
+  const [selectedFacilityCategory, setSelectedFacilityCategory] = React.useState('전체');
 
   const [userId] = React.useState(() => {
     const ANONYMOUS_PREFIX = 'user_anonymous_' + Math.random().toString(36).substring(2, 7);
@@ -147,26 +148,28 @@ function App() {
       return id;
     } catch (e) { return ANONYMOUS_PREFIX; }
   });
-  const [consultations, setConsultations] = React.useState([{
-    id: 'welcome',
-    type: 'answer',
-    text: '반갑습니다! 무엇을 도와드릴까요? 전문가가 곧 답변해 드립니다.',
-    created_at: new Date().toISOString()
-  }]);
+  const [consultations, setConsultations] = React.useState([]);
   const [newQuestion, setNewQuestion] = React.useState('');
+  const [hasUnreadConsultation, setHasUnreadConsultation] = React.useState(false);
   const [isProfileStored, setIsProfileStored] = React.useState(() => {
     try { return !!localStorage.getItem('childinfo_user_name'); } catch (e) { return false; }
   });
-  const [formName, setFormName] = React.useState('');
-  const [formAge, setFormAge] = React.useState('');
+  const [formName, setFormName] = React.useState(() => {
+    try { return localStorage.getItem('childinfo_user_name') || ''; } catch (e) { return ''; }
+  });
+  const [formAge, setFormAge] = React.useState(() => {
+    try { return localStorage.getItem('childinfo_user_age') || ''; } catch (e) { return ''; }
+  });
   const [formCategory, setFormCategory] = React.useState('양육');
 
-
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const [adminSelectedUserId, setAdminSelectedUserId] = React.useState(null);
+  const [allConsultations, setAllConsultations] = React.useState({});
   const [showAdminModal, setShowAdminModal] = React.useState(false);
   const [pin, setPin] = React.useState('');
   const [pinAttempts, setPinAttempts] = React.useState(0);
   const [isLocked, setIsLocked] = React.useState(false);
+
 
   // --- Effects ---
   React.useEffect(() => {
@@ -180,9 +183,72 @@ function App() {
       }
     } catch (e) {}
   }, [darkMode]);
+
+  // ── 상담 데이터 로드 및 실시간 구독 ──────────────────────────────────────
+  React.useEffect(() => {
+    const welcomeMessage = { 
+      id: 'welcome', 
+      type: 'answer', 
+      text: '안녕하세요! 전문가가 상담 내용을 확인하고 정성껏 답변해 드립니다.', 
+      created_at: new Date().toISOString() 
+    };
+
+    const loadData = async () => {
+      try {
+        if (isAdmin) {
+          const grouped = await consultationService.getAllConsultations();
+          setAllConsultations(grouped);
+        } else {
+          const data = await consultationService.getMessages(userId);
+          setConsultations([welcomeMessage, ...data]);
+        }
+      } catch (err) {
+        setConsultations([welcomeMessage]);
+      }
+    };
+    loadData();
+
+    let subscription;
+    const handleRealtime = (payload) => {
+      if (payload.eventType === 'INSERT') {
+        if (isAdmin) {
+          setAllConsultations(prev => {
+            const uid = payload.new.user_id;
+            const updated = { ...prev };
+            if (!updated[uid]) updated[uid] = [];
+            if (!updated[uid].some(m => m.id === payload.new.id)) {
+              updated[uid] = [...updated[uid], payload.new];
+            }
+            return updated;
+          });
+        } else {
+          setConsultations(prev => {
+            if (prev.some(m => m.id === payload.new.id)) return prev;
+            return [...prev, payload.new];
+          });
+          if (activeTab !== 'consult' && payload.new.type === 'answer') {
+            setHasUnreadConsultation(true);
+          }
+        }
+      }
+    };
+
+    if (isAdmin) {
+      subscription = consultationService.subscribeAll(handleRealtime);
+    } else {
+      subscription = consultationService.subscribe(userId, handleRealtime);
+    }
+
+    if (activeTab === 'consult') setHasUnreadConsultation(false);
+
+    return () => {
+      if (subscription && typeof subscription === 'function') subscription();
+    };
+  }, [userId, isAdmin, activeTab]);
+
   React.useEffect(() => {
     if (logoClickCount > 0) {
-      const timer = setTimeout(() => setLogoClickCount(0), 2000);
+      const timer = setTimeout(() => setLogoClickCount(0), 3000);
       return () => clearTimeout(timer);
     }
   }, [logoClickCount]);
@@ -253,6 +319,7 @@ function App() {
     localStorage.setItem('childinfo_milestones', JSON.stringify(newMilestones));
     if (!completedMilestones[id]) triggerToast("우리 아이 성장을 응원합니다! 🎉", "success");
   };
+
 
   const handleGeolocation = () => {
     setIsLocating(true);
@@ -353,12 +420,43 @@ function App() {
     setLogoLastClick(now);
   };
 
+  const handleSendMessage = async () => {
+    if (!newQuestion.trim()) return;
+    try {
+      await consultationService.sendMessage(userId, newQuestion);
+      setNewQuestion('');
+      triggerToast("메시지가 전송되었습니다.");
+    } catch (err) {
+      triggerToast("전송 실패: " + err.message, "error");
+    }
+  };
+
+  const handleAdminAnswer = async (targetUserId, text) => {
+    if (!text.trim()) return;
+    try {
+      await consultationService.sendMessage(targetUserId, text, 'answer');
+      triggerToast("답변이 전송되었습니다.");
+    } catch (err) {
+      triggerToast("전송 실패: " + err.message, "error");
+    }
+  };
+
+  const handleDeleteMessage = async (msgId) => {
+    if (!window.confirm("메시지를 삭제하시겠습니까?")) return;
+    try {
+      await consultationService.deleteMessage(msgId);
+      triggerToast("메시지가 삭제되었습니다.");
+    } catch (err) {
+      triggerToast("삭제 실패: " + err.message, "error");
+    }
+  };
+
   const percentile = React.useMemo(() => calculatePercentile(childInfo) || 0, [childInfo]);
 
   const filteredFacilities = React.useMemo(() => {
     if (!Array.isArray(facilities)) return [];
-    return getFilteredFacilities(facilities, selectedRegion, selectedSubRegion, selectedDong, searchQuery);
-  }, [facilities, selectedRegion, selectedSubRegion, selectedDong, searchQuery]);
+    return getFilteredFacilities(facilities, selectedRegion, selectedSubRegion, selectedDong, searchQuery, selectedFacilityCategory);
+  }, [facilities, selectedRegion, selectedSubRegion, selectedDong, searchQuery, selectedFacilityCategory]);
 
   const availableSubRegions = React.useMemo(() => {
     if (!Array.isArray(facilities) || selectedRegion === '전체') return ['전체'];
@@ -454,10 +552,51 @@ function App() {
             />
           )}
           {activeTab === 'facilities' && (
-            <FacilitiesTab key="facilities" searchQuery={searchQuery} setSearchQuery={setSearchQuery} facilityPage={facilityPage} setFacilityPage={setFacilityPage} selectedRegion={selectedRegion} handleRegionChange={handleRegionChange} selectedSubRegion={selectedSubRegion} setSelectedSubRegion={setSelectedSubRegion} selectedDong={selectedDong} setSelectedDong={setSelectedDong} filteredFacilities={filteredFacilities} isLocating={isLocating} locationMsg={locationMsg} setLocationMsg={setLocationMsg} availableSubRegions={availableSubRegions} handleGeolocation={handleGeolocation} facilities={facilities} />
+            <FacilitiesTab 
+              key="facilities" 
+              searchQuery={searchQuery} 
+              setSearchQuery={setSearchQuery} 
+              facilityPage={facilityPage} 
+              setFacilityPage={setFacilityPage} 
+              selectedRegion={selectedRegion} 
+              handleRegionChange={handleRegionChange} 
+              selectedSubRegion={selectedSubRegion} 
+              setSelectedSubRegion={setSelectedSubRegion} 
+              selectedDong={selectedDong} 
+              setSelectedDong={setSelectedDong} 
+              filteredFacilities={filteredFacilities} 
+              isLocating={isLocating} 
+              locationMsg={locationMsg} 
+              setLocationMsg={setLocationMsg} 
+              availableSubRegions={availableSubRegions} 
+              handleGeolocation={handleGeolocation} 
+              facilities={facilities} 
+              selectedFacilityCategory={selectedFacilityCategory}
+              setSelectedFacilityCategory={setSelectedFacilityCategory}
+            />
           )}
           {activeTab === 'consult' && (
-            <ConsultTab key="consult" userId={userId} consultations={consultations} setConsultations={setConsultations} newQuestion={newQuestion} setNewQuestion={setNewQuestion} isProfileStored={isProfileStored} setIsProfileStored={setIsProfileStored} formName={formName} setFormName={setFormName} formAge={formAge} setFormAge={setFormAge} formCategory={formCategory} setFormCategory={setFormCategory} isAdmin={isAdmin} />
+            <ConsultTab 
+              key="consult" 
+              userId={userId} 
+              consultations={isAdmin ? (adminSelectedUserId ? (allConsultations[adminSelectedUserId] || []) : []) : consultations} 
+              onSendMessage={isAdmin ? (text) => handleAdminAnswer(adminSelectedUserId, text) : handleSendMessage} 
+              onDeleteMessage={handleDeleteMessage}
+              newQuestion={newQuestion} 
+              setNewQuestion={setNewQuestion} 
+              isProfileStored={isProfileStored} 
+              setIsProfileStored={setIsProfileStored} 
+              formName={formName} 
+              setFormName={setFormName} 
+              formAge={formAge} 
+              setFormAge={setFormAge} 
+              formCategory={formCategory} 
+              setFormCategory={setFormCategory} 
+              isAdmin={isAdmin}
+              allConsultations={allConsultations}
+              adminSelectedUserId={adminSelectedUserId}
+              setAdminSelectedUserId={setAdminSelectedUserId}
+            />
           )}
         </AnimatePresence>
       </main>

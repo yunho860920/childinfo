@@ -1,7 +1,9 @@
-// facilityApi.js - Optimized for 100% Region Categorization
+// facilityApi.js - Optimized for nationwide expansion including Hospitals and Counseling Centers
+import { masterFacilityData } from '../data/facilityData';
 
 const SIGGUNGU_DICT = {
   '서울': ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'],
+  // ... (Dictionary content is preserved internally)
   '경기': ['가평군', '고양시', '과천시', '광명시', '광주시', '구리시', '군포시', '김포시', '남양주시', '동두천시', '부천시', '성남시', '수원시', '시흥시', '안산시', '안성시', '안양시', '양주시', '양평군', '여주시', '연천군', '오산시', '용인시', '의왕시', '의정부시', '이천시', '파주시', '평택시', '포천시', '하남시', '화성시'],
   '인천': ['강화군', '계양구', '미추홀구', '남동구', '동구', '부평구', '서구', '연수구', '옹진군', '중구'],
   '부산': ['강서구', '금정구', '기장군', '남구', '동구', '동래구', '부산진구', '북구', '사상구', '사하구', '서구', '수영구', '연제구', '영도구', '중구', '해운대구'],
@@ -21,86 +23,86 @@ const SIGGUNGU_DICT = {
 };
 
 export async function fetchChildFacilities() {
-  // ... (existing code unchanged, just ensuring it's exported)
-  // (Full content below)
   const apiKey = import.meta.env.VITE_BW_API_KEY;
-  if (!apiKey) {
-    console.warn("API key is missing. Using fallback data.");
-    return getFallbackFacilities();
-  }
-  
-  const pagesToFetch = Array.from({length: 20}, (_, i) => 80 + i); 
-  
-  try {
-    const allChildFacilities = [];
-    const requests = pagesToFetch.map(page => {
-      const url = `https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire?serviceKey=${encodeURIComponent(apiKey)}&pageNo=${page}&numOfRows=200&_type=json`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+  let apiFacilities = [];
 
-      return fetch(url, { signal: controller.signal })
-        .then(res => {
-          clearTimeout(timeoutId);
-          if (!res.ok) return null;
-          return res.json();
-        })
-        .catch(() => null);
-    });
-
-    const results = await Promise.all(requests);
-    for (const data of results) {
-      if (!data || !data.response?.body?.items) continue;
-      let rawItems = data.response.body.items.item || [];
-      if (!Array.isArray(rawItems)) rawItems = [rawItems];
-      
-      const filtered = rawItems.filter(fac => {
-        const type = (fac.fcltKindNm || "").toLowerCase();
-        const name = (fac.fcltNm || "").toLowerCase();
-        const excludeKeywords = ['노인', '어르신', '경로단', '치매', '시니어', '실버'];
-        if (excludeKeywords.some(k => type.includes(k) || name.includes(k))) return false;
-
-        const keywords = ['아동', '육아', '꿈나무', '어린이', '키즈', '보육', '장난감', '문화센터', '키즈카페', '달빛어린이'];
-        return keywords.some(k => type.includes(k) || name.includes(k));
+  if (apiKey) {
+    const pagesToFetch = [1, 2, 80]; // Fetch diverse pages for broad coverage
+    try {
+      const requests = pagesToFetch.map(page => {
+        const url = `https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire?serviceKey=${encodeURIComponent(apiKey)}&pageNo=${page}&numOfRows=200&_type=json`;
+        return fetch(url, { signal: AbortSignal.timeout(10000) })
+          .then(res => res.ok ? res.json() : null)
+          .catch(() => null);
       });
-      allChildFacilities.push(...filtered);
-    }
-    
-    if (allChildFacilities.length > 0) {
-      const seen = new Set();
-      return allChildFacilities.filter(fac => {
-        if (!fac.fcltCd || seen.has(fac.fcltCd)) return false;
-        seen.add(fac.fcltCd);
-        return true;
-      }).map(fac => {
-        const fullAddr = fac.jrsdSggNm || "";
-        const name = fac.fcltNm || "이름 없는 시설";
-        const { region, subRegion, dong } = parseAggressiveRegion(fullAddr, name);
+
+      const results = await Promise.all(requests);
+      for (const data of results) {
+        if (!data?.response?.body?.items) continue;
+        let items = data.response.body.items.item || [];
+        if (!Array.isArray(items)) items = [items];
         
-        return {
-          id: fac.fcltCd,
-          name: name,
-          type: fac.fcltKindNm || '기타',
-          region: region,
-          subRegion: subRegion,
-          dong: dong,
-          address: fullAddr,
-          mapUrl: `https://map.kakao.com/?q=${encodeURIComponent(name)}`
-        };
-      });
-    }
-    return getFallbackFacilities();
-  } catch (err) {
-    return getFallbackFacilities();
+        const filtered = items.filter(fac => {
+          const type = (fac.fcltKindNm || "").toLowerCase();
+          const name = (fac.fcltNm || "").toLowerCase();
+          const excludeKeywords = ['노인', '어르신', '경로단', '치매', '시니어', '실버'];
+          if (excludeKeywords.some(k => type.includes(k) || name.includes(k))) return false;
+
+          const keywords = [
+            '아동', '육아', '어린이', '보육', '다함께', '지역아동', '키움', '가족센터', 
+            '육아종합', '어린이집', '나눔터', '심리', '꿈나무', '달빛어린이'
+          ];
+          return keywords.some(k => type.includes(k) || name.includes(k));
+        });
+
+        apiFacilities.push(...filtered.map(fac => {
+          const fullAddr = fac.jrsdSggNm || "";
+          const name = fac.fcltNm || "이름 없는 시설";
+          const { region, subRegion, dong } = parseAggressiveRegion(fullAddr, name);
+          const rawType = fac.fcltKindNm || '기타';
+          
+          return {
+            id: fac.fcltCd,
+            name: name,
+            type: mapFacilityType(rawType, name),
+            region: region,
+            subRegion: subRegion,
+            dong: dong,
+            address: fullAddr,
+            mapUrl: `https://map.kakao.com/?q=${encodeURIComponent(name)}`
+          };
+        }));
+      }
+    } catch (e) { console.error("API Fetch Error:", e); }
   }
+
+  // Merge with Master Data and deduplicate
+  const merged = [...masterFacilityData, ...apiFacilities];
+  const seen = new Set();
+  return merged.filter(f => {
+    if (seen.has(f.id)) return false;
+    seen.add(f.id);
+    return true;
+  });
 }
 
-export const getFilteredFacilities = (facilities, region, subRegion, dong, query) => {
+function mapFacilityType(rawType, name) {
+  const t = (rawType + name).toLowerCase();
+  if (t.includes('어린이집')) return '어린이집';
+  if (t.includes('가족센터')) return '가족센터';
+  if (t.includes('병원') || t.includes('소아과') || t.includes('의원')) return '병원·상담';
+  if (t.includes('상담') || t.includes('심리') || t.includes('발달')) return '병원·상담';
+  if (t.includes('키움') || t.includes('아동센터') || t.includes('지원센터') || t.includes('나눔터')) return '돌봄·지원센터';
+  return '돌봄·지원센터';
+}
+
+export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
   if (!facilities) return [];
-  
   return facilities.filter(f => {
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
     const matchDong = !dong || dong === '전체' || f.dong === dong;
+    const matchCategory = category === '전체' || f.type === category;
     
     const lowerQuery = (query || "").toLowerCase();
     const matchQuery = !query || 
@@ -108,7 +110,7 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
       (f.address || "").toLowerCase().includes(lowerQuery) ||
       (f.type || "").toLowerCase().includes(lowerQuery);
       
-    return matchRegion && matchSub && matchDong && matchQuery;
+    return matchRegion && matchSub && matchDong && matchCategory && matchQuery;
   });
 };
 
@@ -126,26 +128,13 @@ function parseAggressiveRegion(addrStr, facName) {
         break;
       }
     }
-    if (parts.length >= 2) {
-      subRegion = parts[1];
-    }
-    if (parts.length >= 3) {
-      dong = parts[2];
-    }
+    if (parts.length >= 2) subRegion = parts[1];
+    if (parts.length >= 3) dong = parts[2];
   }
 
-  // Refinement for Seoul/Busan matching
   if (region === '기타') {
     if (facName.includes('서울')) region = '서울';
     else if (facName.includes('부산')) region = '부산';
   }
-
   return { region, subRegion, dong };
-}
-
-function getFallbackFacilities() {
-  return [
-    { id: 'f1', name: '해맑은 영유아 보육센터', type: '아동복지시설', region: '서울', subRegion: '강남구', dong: '전체', mapUrl: 'https://map.kakao.com/?q=해맑은+영유아+보육센터' },
-    { id: 'f2', name: '서울시 육아종합지원센터', type: '보육정보센터', region: '서울', subRegion: '종로구', dong: '전체', mapUrl: 'https://map.kakao.com/?q=서울시+육아종합지원센터' },
-  ];
 }

@@ -67,40 +67,63 @@ const WelfareTab = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {(welfareItems || [])
-          .filter(item => item.stage === selectedWelfareStage)
-          .map((item) => (
-            <div 
-              key={item.id} 
-              onClick={() => setExpandedWelfareId(expandedWelfareId === item.id ? null : item.id)}
-              className={cn(
-                "bg-white dark:bg-apple-card p-6 rounded-[2rem] border transition-all duration-300 shadow-sm cursor-pointer",
-                expandedWelfareId === item.id ? "border-brand-primary ring-1 ring-brand-primary/10" : "border-brand-gray-100 dark:border-apple-border hover:border-brand-primary/30"
-              )}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-black uppercase">{item.category}</span>
-                <ChevronDown size={18} className={cn("text-brand-gray-400 transition-transform", expandedWelfareId === item.id && "rotate-180")} />
-              </div>
-              <h4 className="text-lg font-bold text-brand-gray-900 dark:text-white mb-2">{item.title}</h4>
-              <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 font-medium line-clamp-2">{item.summary}</p>
-              
-              <AnimatePresence>
-                {expandedWelfareId === item.id && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pt-4 border-t border-brand-gray-50 dark:border-apple-border overflow-hidden">
-                    <p className="text-xs text-brand-gray-600 dark:text-brand-gray-200 leading-relaxed font-medium">{item.content}</p>
-                    {item.target && (
-                       <div className="mt-3 flex items-start gap-2 text-[10px] font-bold text-brand-gray-400 dark:text-brand-gray-500">
-                          <AlertCircle size={12} className="shrink-0 mt-0.5" />
-                          <span>대상: {item.target}</span>
-                       </div>
-                    )}
-                  </motion.div>
+        {welfareItems.length > 0 ? (
+          welfareItems
+            .filter(item => item.stage === selectedWelfareStage)
+            .map((item) => (
+              <div 
+                key={item.id} 
+                onClick={() => setExpandedWelfareId(expandedWelfareId === item.id ? null : item.id)}
+                className={cn(
+                  "bg-white dark:bg-apple-card p-6 rounded-[2rem] border transition-all duration-300 shadow-sm cursor-pointer",
+                  expandedWelfareId === item.id ? "border-brand-primary ring-1 ring-brand-primary/10" : "border-brand-gray-100 dark:border-apple-border hover:border-brand-primary/30"
                 )}
-              </AnimatePresence>
-            </div>
-          ))}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {(item.tags || []).map(tag => (
+                      <span key={tag} className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-black uppercase">{tag}</span>
+                    ))}
+                  </div>
+                  <ChevronDown size={18} className={cn("text-brand-gray-400 transition-transform", expandedWelfareId === item.id && "rotate-180")} />
+                </div>
+                <h4 className="text-lg font-bold text-brand-gray-900 dark:text-white mb-2">{item.title}</h4>
+                <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 font-medium line-clamp-2">{item.desc}</p>
+                
+                <AnimatePresence>
+                  {expandedWelfareId === item.id && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pt-4 border-t border-brand-gray-50 dark:border-apple-border overflow-hidden">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest mb-1">지원 내용</p>
+                          <p className="text-xs text-brand-gray-800 dark:text-brand-gray-100 leading-relaxed font-bold">{item.details?.content}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-brand-secondary uppercase tracking-widest mb-1">대상</p>
+                          <p className="text-[11px] text-brand-gray-500 dark:text-brand-gray-400 font-medium">{item.details?.target}</p>
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                          <p className="text-[11px] text-brand-gray-400 font-medium">방법: {item.details?.how}</p>
+                          {item.link && (
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-black text-brand-primary hover:underline">
+                              신청하기 <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))
+        ) : (
+          <div className="col-span-full py-20 text-center bg-white dark:bg-apple-card rounded-[2rem] border-2 border-dashed border-brand-gray-100 dark:border-apple-border text-brand-gray-400 font-bold">
+            <AlertCircle size={40} className="mx-auto mb-4 opacity-50" />
+            <p>선택한 지역의 특화 혜택 정보를 불러오는 중이거나 정보가 없습니다.</p>
+          </div>
+        )}
       </div>
+
     </motion.div>
   );
 };

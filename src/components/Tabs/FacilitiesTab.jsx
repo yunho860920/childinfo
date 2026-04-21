@@ -1,9 +1,18 @@
-// src/components/Tabs/FacilitiesTab.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Navigation, X, MapPin } from 'lucide-react';
+import { 
+  Navigation, 
+  X, 
+  MapPin, 
+  Home, 
+  HeartPulse, 
+  Users, 
+  HeartHandshake, 
+  Sparkles,
+  Phone
+} from 'lucide-react';
 import { cn } from '../../utils/uiUtils';
-import { ALL_REGIONS, FACILITIES_PER_PAGE } from '../../constants/uiConstants';
+import { ALL_REGIONS, FACILITIES_PER_PAGE, FACILITY_CATEGORIES } from '../../constants/uiConstants';
 
 const FacilitiesTab = ({
   searchQuery,
@@ -22,7 +31,9 @@ const FacilitiesTab = ({
   setLocationMsg,
   availableSubRegions,
   handleGeolocation,
-  facilities = []
+  facilities = [],
+  selectedFacilityCategory,
+  setSelectedFacilityCategory
 }) => {
   const availableDongs = React.useMemo(() => {
     if (selectedSubRegion === '전체') return ['전체'];
@@ -35,61 +46,107 @@ const FacilitiesTab = ({
     return ['전체', ...dongs.sort()];
   }, [facilities, selectedRegion, selectedSubRegion]);
 
+  const getIconForType = (type) => {
+    switch (type) {
+      case '어린이집': return <Home size={16} />;
+      case '병원·상담': return <HeartPulse size={16} />;
+      case '가족센터': return <Users size={16} />;
+      case '돌봄·지원센터': return <HeartHandshake size={16} />;
+      default: return <MapPin size={16} />;
+    }
+  };
+
+  const getThemeColor = (type) => {
+    switch (type) {
+      case '어린이집': return 'text-orange-500 bg-orange-50 dark:bg-orange-500/10 border-orange-100 dark:border-orange-500/20';
+      case '병원·상담': return 'text-rose-500 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20';
+      case '가족센터': return 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-500/20';
+      case '돌봄·지원센터': return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20';
+      default: return 'text-brand-gray-500 bg-brand-gray-50 dark:bg-white/5 border-brand-gray-100 dark:border-white/10';
+    }
+  };
+
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-        <h3 className="text-xl font-bold dark:text-white">육아 정보 검색</h3>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="pb-12">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h3 className="text-2xl font-black text-brand-gray-900 dark:text-white">전국 육아 인프라 검색</h3>
+          <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 mt-1 font-medium">우리 아이를 위한 병원, 어린이집, 상담센터를 한눈에 찾으세요.</p>
+        </div>
         <button
           onClick={handleGeolocation}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-full text-sm font-bold dark:text-brand-gray-100 shadow-sm hover:border-brand-primary transition-all"
+          className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-apple-card border border-brand-gray-200 dark:border-apple-border rounded-2xl text-sm font-black dark:text-brand-gray-100 shadow-sm hover:border-brand-primary hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
           disabled={isLocating}
         >
-          <Navigation size={14} className={isLocating ? 'animate-spin' : ''} />
-          {isLocating ? '확인 중...' : '내 위치로 찾기'}
+          <Navigation size={16} className={isLocating ? 'animate-spin' : 'text-brand-primary'} />
+          {isLocating ? '위치 확인 중...' : '내 주변 시설 찾기'}
         </button>
       </div>
 
-      <div className="mb-6 relative">
-        <input
-          type="text"
-          placeholder="명칭 검색 (예: 서울대학병원, 꿈동이 어린이집)"
-          value={searchQuery}
-          onChange={(e) => { setSearchQuery(e.target.value); setFacilityPage(1); }}
-          className="w-full h-12 bg-white dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-2xl pl-4 pr-12 text-sm outline-none focus:border-brand-primary dark:text-white transition-all shadow-sm"
-        />
-        {searchQuery && (
-          <X 
-            size={18} 
-            className="absolute right-4 top-3.5 text-brand-gray-400 cursor-pointer hover:text-brand-primary transition-colors" 
-            onClick={() => setSearchQuery('')} 
+      <div className="space-y-6 mb-10">
+        <div className="relative group">
+          <input
+            type="text"
+            placeholder="시설 명칭 또는 주소 검색 (예: 소아과, 키움센터, 어린이집)"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setFacilityPage(1); }}
+            className="w-full h-14 bg-white dark:bg-apple-card border-2 border-brand-gray-100 dark:border-apple-border rounded-[1.5rem] pl-5 pr-14 text-sm font-bold outline-none focus:border-brand-primary dark:text-white transition-all shadow-md group-hover:shadow-xl"
           />
-        )}
+          {searchQuery && (
+            <button 
+              className="absolute right-4 top-4 p-1 hover:bg-brand-gray-100 dark:hover:bg-apple-border rounded-full transition-colors"
+              onClick={() => setSearchQuery('')} 
+            >
+              <X size={20} className="text-brand-gray-400" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {FACILITY_CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => { setSelectedFacilityCategory(cat); setFacilityPage(1); }}
+              className={cn(
+                "px-4 py-2.5 rounded-xl text-xs font-black transition-all border flex items-center gap-2",
+                selectedFacilityCategory === cat
+                  ? "bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20 scale-105"
+                  : "bg-white dark:bg-apple-card text-brand-gray-500 dark:text-brand-gray-400 border-brand-gray-100 dark:border-apple-border hover:border-brand-primary/40"
+              )}
+            >
+              {cat !== '전체' && getIconForType(cat)}
+              {cat}
+            </button>
+          ))}
+        </div>
       </div>
 
       <AnimatePresence>
         {locationMsg && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className={cn("mb-5 p-4 rounded-2xl text-sm font-bold flex justify-between items-center", 
-              locationMsg.type === 'error' ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400" : "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400"
+            className={cn("mb-8 p-5 rounded-[1.5rem] text-sm font-black flex justify-between items-center shadow-sm", 
+              locationMsg.type === 'error' ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20"
             )}
           >
-            {locationMsg.text}
-            <X size={16} onClick={() => setLocationMsg(null)} className="cursor-pointer" />
+            <div className="flex items-center gap-3">
+              <Sparkles size={18} />
+              {locationMsg.text}
+            </div>
+            <X size={20} onClick={() => setLocationMsg(null)} className="cursor-pointer opacity-60 hover:opacity-100" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Region selection horizontally scrollable */}
-      <div className="flex overflow-x-auto gap-2 pb-4 no-scrollbar">
+      <div className="flex overflow-x-auto gap-2 pb-6 no-scrollbar border-b border-brand-gray-100 dark:border-apple-border mb-8">
         {ALL_REGIONS.map(region => (
           <button
             key={region}
             onClick={() => handleRegionChange(region)}
-            className={cn("px-4 py-2 rounded-full text-sm font-bold border transition-all whitespace-nowrap",
+            className={cn("px-5 py-2.5 rounded-full text-xs font-black border transition-all whitespace-nowrap",
               selectedRegion === region 
-                ? "bg-brand-primary text-white border-brand-primary shadow-md" 
-                : "bg-white dark:bg-apple-elevated text-brand-gray-500 dark:text-brand-gray-400 border-brand-gray-200 dark:border-apple-border hover:border-brand-primary/30"
+                ? "bg-brand-gray-900 dark:bg-white text-white dark:text-brand-gray-900 border-brand-gray-900 dark:border-white shadow-xl" 
+                : "bg-white dark:bg-apple-card text-brand-gray-400 dark:text-brand-gray-500 border-brand-gray-100 dark:border-apple-border hover:border-brand-primary/40"
             )}
           >
             {region}
@@ -98,19 +155,19 @@ const FacilitiesTab = ({
       </div>
 
       {selectedRegion !== '전체' && availableSubRegions.length > 1 && (
-        <div className="mb-6 p-5 bg-white dark:bg-apple-card rounded-3xl border border-brand-gray-100 dark:border-apple-border shadow-sm overflow-hidden">
-          <div className="mb-5">
-            <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-[0.2em] mb-3 px-1">{selectedRegion} 내 세부 시/군/구</p>
-            <div className="flex overflow-x-auto gap-2 no-scrollbar pb-2">
+        <div className="mb-10 p-6 bg-brand-gray-50/50 dark:bg-white/5 rounded-[2.5rem] border border-brand-gray-100 dark:border-apple-border">
+          <div className="mb-6">
+            <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest mb-4 px-1">{selectedRegion} 내 시·군·구</p>
+            <div className="flex flex-wrap gap-2">
               {availableSubRegions.map(sub => (
                 <button
                   key={sub}
                   onClick={() => { setSelectedSubRegion(sub); setSelectedDong('전체'); setFacilityPage(1); }}
                   className={cn(
-                    "px-4 py-2.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap",
+                    "px-4 py-2.5 rounded-xl text-xs font-bold transition-all border",
                     selectedSubRegion === sub
-                      ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
-                      : "bg-brand-gray-50 dark:bg-apple-elevated text-brand-gray-500 dark:text-brand-gray-400 border-brand-gray-200 dark:border-apple-border hover:bg-white dark:hover:bg-apple-border hover:border-blue-300"
+                      ? "bg-brand-primary text-white border-brand-primary shadow-md"
+                      : "bg-white dark:bg-apple-card text-brand-gray-500 dark:text-brand-gray-400 border-brand-gray-200 dark:border-apple-border hover:border-brand-primary/30"
                   )}
                 >
                   {sub}
@@ -121,17 +178,17 @@ const FacilitiesTab = ({
 
           {selectedSubRegion !== '전체' && availableDongs.length > 1 && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-              <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-[0.2em] mb-3 px-1">{selectedSubRegion} 내 읍/면/동</p>
-              <div className="flex overflow-x-auto gap-2 no-scrollbar pb-1">
+              <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest mb-4 px-1">{selectedSubRegion} 내 읍·면·동</p>
+              <div className="flex flex-wrap gap-2">
                 {availableDongs.map(dong => (
                   <button
                     key={dong}
                     onClick={() => { setSelectedDong(dong); setFacilityPage(1); }}
                     className={cn(
-                      "px-3.5 py-2 rounded-lg text-xs font-bold transition-all border whitespace-nowrap",
+                      "px-4 py-2 rounded-lg text-[11px] font-bold transition-all border",
                       selectedDong === dong
-                        ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                        : "bg-brand-gray-50 dark:bg-apple-elevated text-brand-gray-500 dark:text-brand-gray-400 border-brand-gray-200 dark:border-apple-border hover:bg-white dark:hover:bg-apple-border hover:border-emerald-300"
+                        ? "bg-emerald-500 text-white border-emerald-500"
+                        : "bg-white dark:bg-apple-card text-brand-gray-400 border-brand-gray-100 dark:border-apple-border"
                     )}
                   >
                     {dong}
@@ -143,50 +200,78 @@ const FacilitiesTab = ({
         </div>
       )}
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(filteredFacilities || []).slice((facilityPage - 1) * FACILITIES_PER_PAGE, facilityPage * FACILITIES_PER_PAGE).map((item) => (
-            <motion.div key={item.id} layout className="p-6 bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] shadow-sm flex flex-col justify-between group">
-              <div>
-                <span className="px-2 py-1 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-black uppercase mb-3 inline-block">{item.type}</span>
-                <h4 className="text-lg font-bold mb-2 dark:text-white group-hover:text-brand-primary transition-colors">{item.name}</h4>
-                <div className="flex items-center gap-2 text-xs text-brand-gray-500 dark:text-brand-gray-400 font-bold">
-                  <MapPin size={12}/> {item.region} {item.subRegion} {item.dong !== '전체' && item.dong}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {(filteredFacilities || []).slice((facilityPage - 1) * FACILITIES_PER_PAGE, facilityPage * FACILITIES_PER_PAGE).map((item) => (
+          <motion.div 
+            key={item.id} 
+            whileHover={{ y: -5 }}
+            className="flex flex-col h-full bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all group overflow-hidden"
+          >
+            <div className="p-7 flex-1">
+              <div className="flex justify-between items-start mb-5">
+                <span className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter border",
+                  getThemeColor(item.type)
+                )}>
+                  {getIconForType(item.type)}
+                  {item.type}
+                </span>
+                {item.id.startsWith('m-') && (
+                  <div className="flex items-center gap-1 text-[10px] font-black text-brand-primary animate-pulse">
+                    <Sparkles size={12} /> 핵심시설
+                  </div>
+                )}
+              </div>
+              
+              <h4 className="text-lg font-black dark:text-white group-hover:text-brand-primary transition-colors mb-3 line-clamp-1">{item.name}</h4>
+              <div className="space-y-2">
+                <div className="flex items-start gap-2 text-xs text-brand-gray-500 dark:text-brand-gray-400 font-bold leading-relaxed">
+                  <MapPin size={14} className="shrink-0 mt-0.5 text-brand-gray-300" />
+                  <span>{item.address || `${item.region} ${item.subRegion} ${item.dong !== '전체' ? item.dong : ''}`}</span>
                 </div>
               </div>
-              <a 
-                href={item.mapUrl} target="_blank" rel="noopener noreferrer"
-                className="mt-6 w-full py-3 bg-[#FEE500] hover:bg-[#FADA0A] text-[#3C1E1E] rounded-xl text-sm font-black text-center transition-all flex items-center justify-center gap-2"
-              >
-                카카오맵에서 위치 확인
-              </a>
-            </motion.div>
-          ))}
-        </div>
-
-        {Math.ceil(filteredFacilities.length / FACILITIES_PER_PAGE) > 1 && (
-          <div className="flex justify-center gap-2 py-8 overflow-x-auto no-scrollbar">
-            {Array.from({ length: Math.ceil(filteredFacilities.length / FACILITIES_PER_PAGE) }, (_, i) => (
-              <button 
-                key={i} onClick={() => { setFacilityPage(i + 1); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                className={cn("min-w-[40px] h-10 px-3 rounded-xl font-bold border transition-all", 
-                  facilityPage === i + 1 
-                    ? "bg-brand-primary text-white border-brand-primary shadow-md" 
-                    : "bg-white dark:bg-apple-elevated border-brand-gray-200 dark:border-apple-border dark:text-brand-gray-300 hover:border-brand-primary/30"
-                )}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        )}
+            </div>
+            
+            <div className="px-7 pb-7 pt-0">
+              <div className="flex gap-2">
+                <a 
+                  href={item.mapUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 h-12 bg-brand-gray-50 dark:bg-apple-elevated hover:bg-brand-primary hover:text-white dark:text-brand-gray-300 dark:hover:bg-brand-primary dark:hover:text-white rounded-2xl text-[11px] font-black transition-all flex items-center justify-center gap-2 border border-brand-gray-100 dark:border-apple-border"
+                >
+                  위치 및 길찾기
+                </a>
+                <button className="w-12 h-12 bg-white dark:bg-apple-elevated border border-brand-gray-100 dark:border-apple-border rounded-2xl flex items-center justify-center text-brand-gray-400 hover:text-brand-primary transition-all">
+                  <Phone size={18} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
 
+      {(filteredFacilities || []).length > FACILITIES_PER_PAGE && (
+        <div className="flex justify-center gap-2 py-12 overflow-x-auto no-scrollbar">
+          {Array.from({ length: Math.ceil(filteredFacilities.length / FACILITIES_PER_PAGE) }, (_, i) => (
+            <button 
+              key={i} onClick={() => { setFacilityPage(i + 1); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
+              className={cn("min-w-[44px] h-11 px-3 rounded-xl font-black text-xs border transition-all", 
+                facilityPage === i + 1 
+                  ? "bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20 scale-110" 
+                  : "bg-white dark:bg-apple-card border-brand-gray-200 dark:border-apple-border text-brand-gray-400 hover:border-brand-primary"
+              )}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
       {filteredFacilities.length === 0 && (
-        <div className="text-center py-20 bg-white dark:bg-apple-card rounded-3xl border-2 border-dashed border-brand-gray-100 dark:border-apple-border">
-           <MapPin size={40} className="mx-auto text-brand-gray-300 dark:text-brand-gray-600 mb-4" />
-           <p className="text-brand-gray-500 dark:text-brand-gray-400 font-bold">검색 결과가 없습니다.</p>
-           <p className="text-brand-gray-400 dark:text-brand-gray-500 text-xs mt-1">지역을 변경하거나 다른 키워드로 검색해 보세요.</p>
+        <div className="text-center py-32 bg-white dark:bg-apple-card rounded-[3rem] border-4 border-dashed border-brand-gray-50 dark:border-apple-border/50">
+           <MapPin size={48} className="mx-auto text-brand-gray-200 dark:text-brand-gray-700 mb-6" />
+           <p className="text-xl font-black text-brand-gray-900 dark:text-white">찾으시는 시설이 목록에 없나요?</p>
+           <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 mt-2 font-medium">검색어를 바꿔보거나 다른 지역을 확인해 보세요.</p>
+           <button onClick={() => { setSearchQuery(''); setSelectedFacilityCategory('전체'); }} className="mt-8 px-6 py-3 bg-brand-primary text-white rounded-2xl font-black text-xs shadow-lg shadow-brand-primary/20">필터 초기화</button>
         </div>
       )}
     </motion.div>

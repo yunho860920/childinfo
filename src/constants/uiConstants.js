@@ -21,3 +21,7 @@ export const MAX_PIN_ATTEMPTS = 5;
 export const PIN_LOCK_DURATION = 5 * 60 * 1000; // 5분 잠금
 export const MIN_PIN_LENGTH = 6;
 export const FACILITIES_PER_PAGE = 12;
+
+export const FACILITY_CATEGORIES = [
+  '전체', '어린이집', '돌봄·지원센터', '가족센터', '병원·상담'
+];
