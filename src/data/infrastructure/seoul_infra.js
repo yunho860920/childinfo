@@ -47,6 +47,11 @@ export const seoulInfra = [
   // --- 도봉구 ---
   { id: 's-db-01', name: '도봉구 가족센터', type: '가족센터', region: '서울', subRegion: '도봉구', dong: '전체', address: '서울 도봉구 도봉로 129길 43', mapUrl: 'https://map.kakao.com/?q=도봉구+가족센터' },
   { id: 's-db-02', name: '도봉구 육아종합지원센터', type: '육아종합지원센터', region: '서울', subRegion: '도봉구', dong: '전체', address: '서울 도봉구 마들로 713', mapUrl: 'https://map.kakao.com/?q=도봉구+육아종합지원센터' },
+  { id: 's-db-03', name: '도봉 1호점 우리동네키움센터(창동)', type: '키움센터', region: '서울', subRegion: '도봉구', dong: '창동', address: '서울 도봉구 창동 1-4', mapUrl: 'https://map.kakao.com/?q=도봉+1호점+키움센터' },
+  { id: 's-db-04', name: '도봉 2호점 우리동네키움센터(창동)', type: '키움센터', region: '서울', subRegion: '도봉구', dong: '창동', address: '서울 도봉구 노해로 63길 43', mapUrl: 'https://map.kakao.com/?q=도봉+2호점+키움센터' },
+  { id: 's-db-05', name: '도봉 융합형 우리동네키움센터', type: '키움센터', region: '서울', subRegion: '도봉구', dong: '창동', address: '서울 도봉구 마들로 11길 77', mapUrl: 'https://map.kakao.com/?q=도봉+융합형+키움센터' },
+  { id: 's-db-06', name: '창동 지역아동센터', type: '돌봄·지원센터', region: '서울', subRegion: '도봉구', dong: '창동', address: '서울 도봉구 덕릉로 59길 10', mapUrl: 'https://map.kakao.com/?q=창동+지역아동센터' },
+  { id: 's-db-07', name: '공동육아나눔터 (창동아레나)', type: '돌봄·지원센터', region: '서울', subRegion: '도봉구', dong: '창동', address: '서울 도봉구 마들로 11길 77', mapUrl: 'https://map.kakao.com/?q=도봉구+공동육아나눔터' },
 
   // --- 노원구 ---
   { id: 's-nw-01', name: '노원구 가족센터', type: '가족센터', region: '서울', subRegion: '노원구', dong: '전체', address: '서울 노원구 동일로 173길 94', mapUrl: 'https://map.kakao.com/?q=노원구+가족센터' },

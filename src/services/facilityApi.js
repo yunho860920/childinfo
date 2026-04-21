@@ -97,40 +97,48 @@ export async function fetchChildFacilities() {
   });
 }
 
-// Robust category normalization map
-const CATEGORY_MAP = {
-  '어린이집': ['어린이집', '보육', '유치원'],
-  '가족센터': ['가족센터', '건강가정', '다문화'],
-  '병원·상담': ['병원', '의원', '상담', '발달', '소아과', '정신', '치료'],
-  '돌봄·지원센터': ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무']
+// EXACT categories from uiConstants.js to avoid middle-dot (·) mismatches
+const CAT_CARE = '돌봄·지원센터';
+const CAT_HOSPITAL = '병원·상담';
+const CAT_FAMILY = '가족센터';
+const CAT_DAYCARE = '어린이집';
+
+const CATEGORY_KEYWORDS = {
+  [CAT_DAYCARE]: ['어린이집', '보육', '유치원', '집'],
+  [CAT_FAMILY]: ['가족센터', '건강가정', '다문화', '가족'],
+  [CAT_HOSPITAL]: ['병원', '의원', '상담', '발달', '소아과', '정신', '치료', '심리', '허그맘'],
+  [CAT_CARE]: ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무', '돌봄', '방과후']
 };
 
 function normalizeCategory(typeStr, nameStr) {
   const t = (typeStr + nameStr).toLowerCase();
-  if (t.includes('어린이집')) return '어린이집';
-  if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return '가족센터';
-  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신')) return '병원·상담';
   
-  for (const k of CATEGORY_MAP['돌봄·지원센터']) {
-    if (t.includes(k)) return '돌봄·지원센터';
+  if (t.includes('어린이집')) return CAT_DAYCARE;
+  if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return CAT_FAMILY;
+  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신') || t.includes('심리')) return CAT_HOSPITAL;
+  
+  for (const k of CATEGORY_KEYWORDS[CAT_CARE]) {
+    if (t.includes(k)) return CAT_CARE;
   }
-  return '돌봄·지원센터'; // Default
+  
+  return CAT_CARE; // Default fall-through
 }
 
 export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
-  if (!facilities) return [];
+  if (!facilities || !Array.isArray(facilities)) return [];
   
   return facilities.filter(f => {
-    // 1. Category Matching (Normalization)
+    // 1. Precise Category Normalization
     const facilityCat = normalizeCategory(f.type || '', f.name || '');
     const matchCategory = category === '전체' || facilityCat === category;
 
-    // 2. Region Matching
+    // 2. Geographic Filtering (Region/SubRegion)
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
-    const matchDong = !dong || dong === '전체' || f.dong === dong;
+    // Fix: If a specific dong is selected, show facilities belonging to that dong OR district-wide '전체' facilities.
+    const matchDong = !dong || dong === '전체' || f.dong === dong || f.dong === '전체';
     
-    // 3. Search Query Matching
+    // 3. Search Query (Name/Address/Category)
     const lowerQuery = (query || "").toLowerCase();
     const matchQuery = !query || 
       (f.name || "").toLowerCase().includes(lowerQuery) || 
@@ -159,24 +167,31 @@ function parseAggressiveRegion(addrStr, facName) {
         break;
       }
     }
-    // Specific fix for Seoul districts
-    if (region === '서울' && parts.length >= 2) {
+    
+    // Improved sub-region extraction (Seoul 25-districts focus)
+    if (parts.length >= 2) {
       const second = parts[1];
-      if (second.endsWith('구')) subRegion = second;
-      else if (parts[2] && parts[2].endsWith('구')) subRegion = parts[2];
-    } else {
-      if (parts.length >= 2) subRegion = parts[1];
+      if (second.endsWith('구') || second.endsWith('시') || second.endsWith('군')) {
+        subRegion = second;
+      } else if (parts[2] && (parts[2].endsWith('구') || parts[2].endsWith('시'))) {
+        subRegion = parts[2];
+      } else {
+        subRegion = second;
+      }
     }
     
-    if (parts.length >= 3) dong = parts[2];
+    if (parts.length >= 3) {
+      const third = parts[2];
+      if (third.endsWith('동') || third.endsWith('읍') || third.endsWith('면')) {
+        dong = third;
+      }
+    }
   }
 
-  // Heuristic for missing address parts
   if (region === '기타') {
     if (facName.includes('서울')) region = '서울';
     else if (facName.includes('경기')) region = '경기';
     else if (facName.includes('부산')) region = '부산';
-    else if (facName.includes('인천')) region = '인천';
   }
   return { region, subRegion, dong };
 }
