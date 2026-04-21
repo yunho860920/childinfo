@@ -25,6 +25,16 @@ const HealthTab = ({
     { label: '11~12세', min: 132, max: 144 },
   ];
 
+  const vaxStats = React.useMemo(() => {
+    const totalVax = (vaccinationSchedule || []).reduce((acc, curr) => acc + curr.vaccines.length, 0);
+    const doneVax = Object.values(completedVaccines || {}).filter(Boolean).length;
+    return {
+      total: totalVax,
+      done: doneVax,
+      pct: totalVax > 0 ? Math.round((doneVax / totalVax) * 100) : 0
+    };
+  }, [completedVaccines]);
+
   const filteredVax = (vaccinationSchedule || []).filter(s => {
     if (vaxFilter === '전체') return true;
     const group = vaxAgeGroups.find(g => g.label === vaxFilter);
@@ -64,32 +74,18 @@ const HealthTab = ({
 
       {selectedHealthCategory === '예방접종 일정' ? (
         <div className="space-y-6">
-          {(() => {
-            const { total, done, pct } = React.useMemo(() => {
-              const totalVax = vaccinationSchedule.reduce((acc, curr) => acc + curr.vaccines.length, 0);
-              const doneVax = Object.values(completedVaccines || {}).filter(Boolean).length;
-              return {
-                total: totalVax,
-                done: doneVax,
-                pct: Math.round((doneVax / totalVax) * 100)
-              };
-            }, [completedVaccines]);
-
-            return (
-              <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] p-6 shadow-soft">
-                <div className="flex items-end justify-between mb-4">
-                  <div>
-                    <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md mb-2 inline-block">NIP Protocol</span>
-                    <h3 className="text-lg font-black text-brand-gray-900 dark:text-white">접종 달성률</h3>
-                  </div>
-                  <div className="text-3xl font-black text-emerald-500">{pct}%</div>
-                </div>
-                <div className="h-2.5 w-full bg-brand-gray-100 dark:bg-apple-border rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className="h-full bg-emerald-500 rounded-full" />
-                </div>
+          <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] p-6 shadow-soft">
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md mb-2 inline-block">NIP Protocol</span>
+                <h3 className="text-lg font-black text-brand-gray-900 dark:text-white">접종 달성률</h3>
               </div>
-            );
-          })()}
+              <div className="text-3xl font-black text-emerald-500">{vaxStats.pct}%</div>
+            </div>
+            <div className="h-2.5 w-full bg-brand-gray-100 dark:bg-apple-border rounded-full overflow-hidden">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${vaxStats.pct}%` }} className="h-full bg-emerald-500 rounded-full" />
+            </div>
+          </div>
 
           <div className="flex gap-2 py-2 overflow-x-auto no-scrollbar">
             {vaxAgeGroups.map(group => (
