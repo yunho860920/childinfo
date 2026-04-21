@@ -99,10 +99,16 @@ export async function fetchChildFacilities() {
 
 function mapFacilityType(rawType, name) {
   const t = (rawType + name).toLowerCase();
+  // Exact match for UI constants: '전체', '어린이집', '돌봄·지원센터', '가족센터', '병원·상담'
   if (t.includes('어린이집')) return '어린이집';
-  if (t.includes('가족센터') || t.includes('건강가정')) return '가족센터';
+  if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return '가족센터';
   if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신')) return '병원·상담';
-  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합') || t.includes('다함께') || t.includes('지역아동')) return '돌봄·지원센터';
+  
+  // 돌봄·지원센터 (Includes support centers, childcare info centers, Kium hubs, etc.)
+  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터') || t.includes('육아종합') || t.includes('다함께') || t.includes('지역아동') || t.includes('꿈나무')) {
+    return '돌봄·지원센터';
+  }
+  
   return '돌봄·지원센터';
 }
 
@@ -110,10 +116,8 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
   if (!facilities) return [];
   
   return facilities.filter(f => {
-    // Normalization: Ensure f.type is matched correctly if not already normalized
-    const normalizedType = f.type && ['어린이집', '돌봄·지원센터', '가족센터', '병원·상담'].includes(f.type) 
-      ? f.type 
-      : mapFacilityType(f.type || '', f.name || '');
+    // Crucial: Normalize type for filtering to match UI category strings EXACTLY
+    const normalizedType = mapFacilityType(f.type || '', f.name || '');
 
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
@@ -124,7 +128,7 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
     const matchQuery = !query || 
       (f.name || "").toLowerCase().includes(lowerQuery) || 
       (f.address || "").toLowerCase().includes(lowerQuery) ||
-      (f.type || "").toLowerCase().includes(lowerQuery);
+      (normalizedType).toLowerCase().includes(lowerQuery);
       
     return matchRegion && matchSub && matchDong && matchCategory && matchQuery;
   });
@@ -148,6 +152,7 @@ function parseAggressiveRegion(addrStr, facName) {
     if (parts.length >= 3) dong = parts[2];
   }
 
+  // Heuristic for missing address parts
   if (region === '기타') {
     if (facName.includes('서울')) region = '서울';
     else if (facName.includes('경기')) region = '경기';
