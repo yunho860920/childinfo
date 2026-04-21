@@ -1,9 +1,20 @@
-// facilityApi.js - Optimized for nationwide expansion including Hospitals and Counseling Centers
-import { masterFacilityData } from '../data/facilityData';
+// facilityApi.js - Unified Query Engine for Nationwide Infrastructure
+import { seoulInfra } from '../data/infrastructure/seoul_infra';
+import { gyeonggiInfra } from '../data/infrastructure/gyeonggi_infra';
+import { metropalsInfra } from '../data/infrastructure/metropals_infra';
+import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
+
+// System Database: High-density verified data
+const SYSTEM_DATABASE = [
+  ...seoulInfra,
+  ...gyeonggiInfra,
+  ...metropalsInfra,
+  ...hospitalsInfra
+];
 
 const SIGGUNGU_DICT = {
   '서울': ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'],
-  // ... (Dictionary content is preserved internally)
+  // ... (Preserved internally)
   '경기': ['가평군', '고양시', '과천시', '광명시', '광주시', '구리시', '군포시', '김포시', '남양주시', '동두천시', '부천시', '성남시', '수원시', '시흥시', '안산시', '안성시', '안양시', '양주시', '양평군', '여주시', '연천군', '오산시', '용인시', '의왕시', '의정부시', '이천시', '파주시', '평택시', '포천시', '하남시', '화성시'],
   '인천': ['강화군', '계양구', '미추홀구', '남동구', '동구', '부평구', '서구', '연수구', '옹진군', '중구'],
   '부산': ['강서구', '금정구', '기장군', '남구', '동구', '동래구', '부산진구', '북구', '사상구', '사하구', '서구', '수영구', '연제구', '영도구', '중구', '해운대구'],
@@ -27,7 +38,7 @@ export async function fetchChildFacilities() {
   let apiFacilities = [];
 
   if (apiKey) {
-    const pagesToFetch = [1, 2, 80]; // Fetch diverse pages for broad coverage
+    const pagesToFetch = [1, 2, 10, 80]; // Broad sampling
     try {
       const requests = pagesToFetch.map(page => {
         const url = `https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire?serviceKey=${encodeURIComponent(apiKey)}&pageNo=${page}&numOfRows=200&_type=json`;
@@ -45,26 +56,21 @@ export async function fetchChildFacilities() {
         const filtered = items.filter(fac => {
           const type = (fac.fcltKindNm || "").toLowerCase();
           const name = (fac.fcltNm || "").toLowerCase();
-          const excludeKeywords = ['노인', '어르신', '경로단', '치매', '시니어', '실버'];
-          if (excludeKeywords.some(k => type.includes(k) || name.includes(k))) return false;
+          if (name.includes('노인') || name.includes('경로')) return false;
 
-          const keywords = [
-            '아동', '육아', '어린이', '보육', '다함께', '지역아동', '키움', '가족센터', 
-            '육아종합', '어린이집', '나눔터', '심리', '꿈나무', '달빛어린이'
-          ];
+          const keywords = ['아동', '육아', '어린이', '가족', '키움', '보육', '다함께', '상담', '심리', '병원'];
           return keywords.some(k => type.includes(k) || name.includes(k));
         });
 
         apiFacilities.push(...filtered.map(fac => {
           const fullAddr = fac.jrsdSggNm || "";
-          const name = fac.fcltNm || "이름 없는 시설";
+          const name = fac.fcltNm || "시설";
           const { region, subRegion, dong } = parseAggressiveRegion(fullAddr, name);
-          const rawType = fac.fcltKindNm || '기타';
           
           return {
             id: fac.fcltCd,
             name: name,
-            type: mapFacilityType(rawType, name),
+            type: mapFacilityType(fac.fcltKindNm || '', name),
             region: region,
             subRegion: subRegion,
             dong: dong,
@@ -73,15 +79,16 @@ export async function fetchChildFacilities() {
           };
         }));
       }
-    } catch (e) { console.error("API Fetch Error:", e); }
+    } catch (e) { console.error(e); }
   }
 
-  // Merge with Master Data and deduplicate
-  const merged = [...masterFacilityData, ...apiFacilities];
-  const seen = new Set();
-  return merged.filter(f => {
-    if (seen.has(f.id)) return false;
-    seen.add(f.id);
+  // Merge: Local Data is Priority
+  const allData = [...SYSTEM_DATABASE, ...apiFacilities];
+  const seenNames = new Set();
+  return allData.filter(fac => {
+    const uniqueKey = `${fac.name}-${fac.region}-${fac.subRegion}`;
+    if (seenNames.has(uniqueKey)) return false;
+    seenNames.add(uniqueKey);
     return true;
   });
 }
@@ -89,10 +96,9 @@ export async function fetchChildFacilities() {
 function mapFacilityType(rawType, name) {
   const t = (rawType + name).toLowerCase();
   if (t.includes('어린이집')) return '어린이집';
-  if (t.includes('가족센터')) return '가족센터';
-  if (t.includes('병원') || t.includes('소아과') || t.includes('의원')) return '병원·상담';
-  if (t.includes('상담') || t.includes('심리') || t.includes('발달')) return '병원·상담';
-  if (t.includes('키움') || t.includes('아동센터') || t.includes('지원센터') || t.includes('나눔터')) return '돌봄·지원센터';
+  if (t.includes('가족센터') || t.includes('건강가정')) return '가족센터';
+  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달')) return '병원·상담';
+  if (t.includes('키움') || t.includes('지원센터') || t.includes('나눔터') || t.includes('아동복지') || t.includes('아동센터')) return '돌봄·지원센터';
   return '돌봄·지원센터';
 }
 
@@ -113,6 +119,32 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
     return matchRegion && matchSub && matchDong && matchCategory && matchQuery;
   });
 };
+
+function parseAggressiveRegion(addrStr, facName) {
+  const parts = (addrStr || "").split(" ").filter(p => p.trim());
+  let region = '기타';
+  let subRegion = '전체';
+  let dong = '전체';
+
+  if (parts.length > 0) {
+    const first = parts[0];
+    for (const r in SIGGUNGU_DICT) {
+      if (first.includes(r)) {
+        region = r;
+        break;
+      }
+    }
+    if (parts.length >= 2) subRegion = parts[1];
+    if (parts.length >= 3) dong = parts[2];
+  }
+
+  if (region === '기타') {
+    if (facName.includes('서울')) region = '서울';
+    else if (facName.includes('경기')) region = '경기';
+    else if (facName.includes('부산')) region = '부산';
+  }
+  return { region, subRegion, dong };
+}
 
 function parseAggressiveRegion(addrStr, facName) {
   const parts = (addrStr || "").split(" ").filter(p => p.trim());
