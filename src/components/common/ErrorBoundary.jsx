@@ -25,7 +25,7 @@ class ErrorBoundary extends React.Component {
             </div>
             <h1 className="text-2xl font-black text-brand-gray-900 mb-2">시스템 연결 오류</h1>
             <p className="text-brand-gray-500 mb-8 leading-relaxed font-medium">
-              죄송합니다. 모바일 환경 최적화 과정에서 일시적인 요류가 발생했습니다. 브라우저 캐시를 삭제하거나 페이지를 새로고침해 보세요.
+              죄송합니다. 모바일 환경 최적화 과정에서 일시적인 오류가 발생했습니다. 브라우저 캐시를 삭제하거나 페이지를 새로고침해 보세요.
             </p>
             <div className="space-y-4">
               <button 

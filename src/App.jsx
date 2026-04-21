@@ -79,7 +79,7 @@ function App() {
   const [growthRecords, setGrowthRecords] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_growth_history') : null;
-      if (saved) return JSON.parse(saved);
+      if (saved) return JSON.parse(saved) || [];
     } catch (e) { return []; }
     return [];
   });
@@ -88,7 +88,7 @@ function App() {
   const [tempRecords, setTempRecords] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_temp_history') : null;
-      if (saved) return JSON.parse(saved);
+      if (saved) return JSON.parse(saved) || [];
     } catch (e) { return []; }
     return [];
   });
@@ -104,14 +104,14 @@ function App() {
   const [completedVaccines, setCompletedVaccines] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_vaccines') : null;
-      if (saved) return JSON.parse(saved);
+      if (saved) return JSON.parse(saved) || {};
     } catch (e) { return {}; }
     return {};
   });
   const [completedMilestones, setCompletedMilestones] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_milestones') : null;
-      if (saved) return JSON.parse(saved);
+      if (saved) return JSON.parse(saved) || {};
     } catch (e) { return {}; }
     return {};
   });
