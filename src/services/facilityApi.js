@@ -1,5 +1,5 @@
 // facilityApi.js - Unified Query Engine for Nationwide Infrastructure
-import { seoulInfra } from '../data/infrastructure/seoul_infra';
+import { seoulInfra } from '../data/infrastructure/seoul/index';
 import { gyeonggiInfra } from '../data/infrastructure/gyeonggi_infra';
 import { metropalsInfra } from '../data/infrastructure/metropals_infra';
 import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
