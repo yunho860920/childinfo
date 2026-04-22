@@ -36,16 +36,20 @@ const PracticalTab = ({ childInfo }) => {
     { id: '책읽기 연습', icon: <BookOpen size={16} /> }
   ];
 
-  const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
+  const months = ['전체', 0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
   
   const filteredData = (ageTimelineData || []).filter(item => {
     const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
-    const matchMonth = item.month === selectedTimelineMonth;
+    const matchMonth = selectedTimelineMonth === '전체' ? true : item.month === selectedTimelineMonth;
     const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         item.summary.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchMonth && matchSearch;
   }).sort((a, b) => {
-    // 단계별 정렬 (같은 달에 여러 카드인 경우)
+    // 1순위: 월령별 정렬 (전체 보기일 때 중요)
+    if (a.month !== b.month) {
+      return a.month - b.month;
+    }
+    // 2순위: 단계별 정렬 (같은 달에 여러 카드인 경우)
     if (a.step && b.step) {
       return a.step - b.step;
     }
@@ -120,7 +124,12 @@ const PracticalTab = ({ childInfo }) => {
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
           <span className="text-xs font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest">성장 타임라인</span>
-          <span className="text-xs font-bold text-brand-primary">{selectedTimelineMonth === 0 ? '신생아기' : `${selectedTimelineMonth}개월`}</span>
+          <span className={cn(
+            "text-xs font-bold transition-all",
+            selectedTimelineMonth === '전체' ? "text-brand-primary" : "text-brand-primary"
+          )}>
+            {selectedTimelineMonth === '전체' ? '모든 성장 과정' : (selectedTimelineMonth === 0 ? '신생아기' : `${selectedTimelineMonth}개월`)}
+          </span>
         </div>
         <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar px-2">
           {months.map((m) => (
@@ -138,13 +147,13 @@ const PracticalTab = ({ childInfo }) => {
                   ? "bg-brand-primary text-white scale-110 shadow-lg shadow-brand-primary/30" 
                   : "bg-brand-gray-50 dark:bg-apple-elevated text-brand-gray-400 dark:text-brand-gray-500 group-hover:text-brand-primary group-hover:scale-105"
               )}>
-                {m}
+                {m === '전체' ? 'All' : m}
               </div>
               <span className={cn(
                 "text-[11px] font-black tracking-tight transition-colors",
                 selectedTimelineMonth === m ? "text-brand-primary" : "text-brand-gray-400 dark:text-brand-gray-500"
               )}>
-                {m === 0 ? '출생' : `${m}개월`}
+                {m === '전체' ? '전체보기' : (m === 0 ? '출생' : `${m}개월`)}
               </span>
               {selectedTimelineMonth === m && (
                 <motion.div 
