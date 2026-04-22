@@ -532,7 +532,7 @@ function App() {
           ))}
         </nav>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {activeTab === 'practical' && (
             <PracticalTab key="practical" childInfo={childInfo} />
           )}

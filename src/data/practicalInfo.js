@@ -164,6 +164,22 @@ export const ageTimelineData = [
     ]
   },
 
+  // --- 8개월 (중기 이유식 보강) ---
+  {
+    month: 8,
+    category: '이유식 훈련',
+    step: 2,
+    title: '2단계: 중기 이유식 (만 7~8개월)',
+    image: '/images/baby/food_intermediate.png',
+    summary: '단백질 보충이 중요한 시기입니다. 입자 크기를 조금씩 늘려주세요.',
+    points: [
+      '권장 섭취량: 80~120g (1일 2회)',
+      '추천 조합: 닭안심+새송이, 소고기+애호박',
+      '특징: 으깬 형태(7배죽) 및 고기 필수',
+      '다양한 식재료 경험 유도'
+    ]
+  },
+
   // --- 9개월 ---
   {
     month: 9,
@@ -189,6 +205,20 @@ export const ageTimelineData = [
     image: '/images/baby/walking_stand.png',
     summary: '가구를 잡고 스스로 몸을 일으키며 하체 근력을 키우는 시기입니다.',
     points: ['튼튼한 가구(소파 등) 활용', '장난감으로 일어서기 유도', '맨발로 바닥 접지력 높여주기', '넘어져도 안전한 매트 설치']
+  },
+  {
+    month: 9,
+    category: '이유식 훈련',
+    step: 3,
+    title: '3단계: 후기 이유식 (만 9~11개월)',
+    image: '/images/baby/food_late.png',
+    summary: '핑거푸드를 통해 스스로 먹는 연습을 시작하는 시기입니다.',
+    points: [
+      '권장 섭취량: 120~150g (1일 3회)',
+      '추천 조합: 가자미+무+애호박, 소고기+가지',
+      '특징: 무른밥/잘게 다진 형태',
+      '손으로 집어 먹는 핑거푸드 시도'
+    ]
   },
 
   // --- 12개월 ---
