@@ -23,5 +23,5 @@ export const MIN_PIN_LENGTH = 6;
 export const FACILITIES_PER_PAGE = 12;
 
 export const FACILITY_CATEGORIES = [
-  '전체', '어린이집', '돌봄·지원센터', '가족센터', '병원·상담'
+  '전체', '어린이집', '놀이·체험', '돌봄·지원센터', '가족센터', '병원·상담'
 ];

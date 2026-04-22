@@ -1,14 +1,42 @@
 // facilityApi.js - Unified Query Engine for Nationwide Infrastructure
 import { seoulInfra } from '../data/infrastructure/seoul/index';
-import { gyeonggiInfra } from '../data/infrastructure/gyeonggi_infra';
-import { metropalsInfra } from '../data/infrastructure/metropals_infra';
+import { gyeonggiInfra } from '../data/infrastructure/gyeonggi/index';
+import { incheonInfra } from '../data/infrastructure/incheon/index';
+import { busanInfra } from '../data/infrastructure/busan/index';
+import { daeguInfra } from '../data/infrastructure/daegu/index';
+import { daejeonInfra } from '../data/infrastructure/daejeon/index';
+import { gwangjuInfra } from '../data/infrastructure/gwangju/index';
+import { ulsanInfra } from '../data/infrastructure/ulsan/index';
+import { sejongInfra } from '../data/infrastructure/sejong/index';
+import { gangwonInfra } from '../data/infrastructure/gangwon/index';
+import { chungbukInfra } from '../data/infrastructure/chungbuk/index';
+import { chungnamInfra } from '../data/infrastructure/chungnam/index';
+import { jeonbukInfra } from '../data/infrastructure/jeonbuk/index';
+import { jeonnamInfra } from '../data/infrastructure/jeonnam/index';
+import { gyeongbukInfra } from '../data/infrastructure/gyeongbuk/index';
+import { gyeongnamInfra } from '../data/infrastructure/gyeongnam/index';
+import { jejuInfra } from '../data/infrastructure/jeju/index';
 import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
 
 // System Database: High-density verified data
 const SYSTEM_DATABASE = [
   ...seoulInfra,
   ...gyeonggiInfra,
-  ...metropalsInfra,
+  ...incheonInfra,
+  ...busanInfra,
+  ...daeguInfra,
+  ...daejeonInfra,
+  ...gwangjuInfra,
+  ...ulsanInfra,
+  ...sejongInfra,
+  ...gangwonInfra,
+  ...chungbukInfra,
+  ...chungnamInfra,
+  ...jeonbukInfra,
+  ...jeonnamInfra,
+  ...gyeongbukInfra,
+  ...gyeongnamInfra,
+  ...jejuInfra,
   ...hospitalsInfra
 ];
 
@@ -102,11 +130,13 @@ const CAT_CARE = '돌봄·지원센터';
 const CAT_HOSPITAL = '병원·상담';
 const CAT_FAMILY = '가족센터';
 const CAT_DAYCARE = '어린이집';
+const CAT_PLAY = '놀이·체험';
 
 const CATEGORY_KEYWORDS = {
   [CAT_DAYCARE]: ['어린이집', '보육', '유치원', '집'],
   [CAT_FAMILY]: ['가족센터', '건강가정', '다문화', '가족'],
   [CAT_HOSPITAL]: ['병원', '의원', '상담', '발달', '소아과', '정신', '치료', '심리', '허그맘'],
+  [CAT_PLAY]: ['키즈카페', '놀이터', '박물관', '체험', '과학관', '도서관', '장난감', '미술관', '생태', '숲체험', '문화센터', '상상나라', '아트홀', '극단', '체육', '공원'],
   [CAT_CARE]: ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무', '돌봄', '방과후']
 };
 
@@ -117,6 +147,11 @@ function normalizeCategory(typeStr, nameStr) {
   if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return CAT_FAMILY;
   if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신') || t.includes('심리')) return CAT_HOSPITAL;
   
+  // New: Play/Experience detection
+  for (const k of CATEGORY_KEYWORDS[CAT_PLAY]) {
+    if (t.includes(k)) return CAT_PLAY;
+  }
+
   for (const k of CATEGORY_KEYWORDS[CAT_CARE]) {
     if (t.includes(k)) return CAT_CARE;
   }

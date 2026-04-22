@@ -1,4 +1,5 @@
-// src/data/infrastructure/seoul/index.js
+
+// Manual high-quality data (modular)
 import { jongnoData } from './jongno';
 import { jungguData } from './junggu';
 import { yongsanData } from './yongsan';
@@ -25,7 +26,14 @@ import { gangnamData } from './gangnam';
 import { songpaData } from './songpa';
 import { gangdongData } from './gangdong';
 
+// Automated high-density data
+import { seoulAutoData } from './auto_index';
+
+// Legacy curated data
+import { seoulInfra as legacySeoulInfra } from '../seoul_infra';
+
 export const seoulInfra = [
+  ...legacySeoulInfra,
   ...jongnoData,
   ...jungguData,
   ...yongsanData,
@@ -50,5 +58,6 @@ export const seoulInfra = [
   ...seochoData,
   ...gangnamData,
   ...songpaData,
-  ...gangdongData
+  ...gangdongData,
+  ...seoulAutoData
 ];
