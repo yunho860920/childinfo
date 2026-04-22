@@ -131,35 +131,43 @@ export const growthMilestones = [
 
 export const ageHealthData = [
   {
-    ageLabel: '신생아',
+    ageLabel: '신생아기 (0~1개월)',
     border: 'border-blue-500',
     conditions: [
-      { name: '영아 산통', desc: '이유 없이 계속 우는 경우, 배에 가스가 찼는지 확인하세요.', needsDoctor: false },
-      { name: '신생아 황달', desc: '피부나 눈의 흰자가 노랗게 변하면 즉시 소아과를 방문하세요.', needsDoctor: true, doctorNote: '광선 치료가 필요할 수 있습니다.' }
+      { name: '신생아 황달', desc: '피부나 눈의 흰자가 노랗게 변하면 즉시 소아과를 방문하세요.', needsDoctor: true, doctorNote: '광선 치료가 필요할 수 있습니다.' },
+      { name: '영아 산통', desc: '이유 없이 계속 우는 경우, 배에 가스가 찼는지 확인하세요. 부드럽게 배를 마사지해 주는 것이 도움이 됩니다.', needsDoctor: false },
+      { name: '제대 탈락 및 배꼽 관리', desc: '기저귀가 배꼽을 덮지 않도록 접어주시고, 붉어지거나 진물이 나면 진료를 받으세요.', needsDoctor: false },
+      { name: '수유 및 체중 감소', desc: '생후 첫 주에는 생리적 체중 감소가 있으나, 이후 체중이 잘 늘고 있는지 모니터링하세요.', needsDoctor: false }
     ]
   },
   {
-    ageLabel: '영아 후기',
+    ageLabel: '영아기 (1~12개월)',
     border: 'border-emerald-500',
     conditions: [
-      { name: '치아 맹출', desc: '아랫니 두 개가 올라오기 시작합니다. 거즈로 닦아주세요.', needsDoctor: false },
-      { name: '분리 불안', desc: '양육자와 떨어질 때 심하게 울 수 있습니다. 꾸준한 애정 표현이 중요합니다.', needsDoctor: false }
+      { name: '이유식 시작 및 알레르기', desc: '생후 4~6개월부터 이유식을 시작하며, 새로운 음식 추가 시 알레르기 반응을 3일간 관찰하세요.', needsDoctor: false },
+      { name: '영아 연축', desc: '깜짝 놀라는 듯한 동작을 연달아 반복하는 발작 증상이 보이면 즉시 응급실로 가세요.', needsDoctor: true, doctorNote: '응급 뇌파 검사 및 전문의 진료가 시급합니다.' },
+      { name: '치아 맹출', desc: '아랫니 두 개가 올라오기 시작합니다. 실리콘 칫솔이나 거즈로 잇몸을 부드럽게 닦아주세요.', needsDoctor: false },
+      { name: '분리 불안', desc: '양육자와 떨어질 때 심하게 울 수 있습니다. 까꿍놀이 등을 통해 꾸준한 애정 표현이 중요합니다.', needsDoctor: false }
     ]
   },
   {
-    ageLabel: '걸음마기',
+    ageLabel: '유아기 (1~3세)',
     border: 'border-orange-500',
     conditions: [
-      { name: '식사 거부', desc: '독립심이 생기며 편식이 생길 수 있습니다. 억지로 먹이지 마세요.', needsDoctor: false },
-      { name: '모서리 추돌', desc: '활동량이 늘어나 부딪힘 사고가 잦습니다. 안전 가드가 필수입니다.', needsDoctor: false }
+      { name: '철분 결핍성 빈혈', desc: '아이가 지나치게 창백하고 밥을 잘 먹지 않으며 보채는 경우 빈혈을 의심해 보세요.', needsDoctor: true, doctorNote: '혈액검사 확인 후 철분제 복용이 필요할 수 있습니다.' },
+      { name: '열성 경련', desc: '고열 시 경련을 일으킬 수 있습니다. 고개를 돌려 기도를 확보하고 시간을 재며 즉시 병원으로 가세요.', needsDoctor: true, doctorNote: '첫 발생 시 뇌수막염 등 감별을 위해 진료 필수입니다.' },
+      { name: '식사 거부 및 편식', desc: '독립심이 생기며 편식이 생길 수 있습니다. 억지로 먹이지 말고 식사 시간을 즐겁게 만들어주세요.', needsDoctor: false },
+      { name: '대소변 가리기', desc: '변기에 관심을 보이면 강압적이지 않게 배변 훈련을 시작하세요.', needsDoctor: false }
     ]
   },
   {
-    ageLabel: '유아 초기',
+    ageLabel: '학령전기 (3~6세)',
     border: 'border-purple-500',
     conditions: [
-      { name: '배변 훈련', desc: '스스로 신호를 인지하기 시작하는 시기입니다. 칭찬을 아끼지 마세요.', needsDoctor: false },
-      { name: '한글/숫자 노출', desc: '놀이를 통해 자연스럽게 학습에 흥미를 느끼도록 도와주세요.', needsDoctor: false }
+      { name: '시력 및 청력 발달', desc: 'TV를 너무 가까이서 보거나 불러도 대답이 없는 경우 시력/청력 검사를 받아보세요.', needsDoctor: true, doctorNote: '사시, 약시 조기 발견을 위해 영유아 검진이 필수입니다.' },
+      { name: '아데노이드 비대증', desc: '코골이가 심하거나 입을 벌리고 자는 경우, 잦은 중이염이 발생하면 확인이 필요합니다.', needsDoctor: true, doctorNote: '수면 다원 검사 및 이비인후과 진료를 권장합니다.' },
+      { name: '언어 발달 지연', desc: '또래보다 언어 표현이 현저히 늦고 의사소통에 어려움이 있을 경우 발달 평가를 받아보세요.', needsDoctor: true, doctorNote: '조기 개입 및 언어 치료가 필요할 수 있습니다.' },
+      { name: '사회성 및 감정 조절', desc: '친구들과 잘 어울리는지, 감정을 말로 표현하는지 관찰하고 공감해 주세요.', needsDoctor: false }
     ]
   }
 ];

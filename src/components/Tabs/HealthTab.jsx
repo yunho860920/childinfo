@@ -14,7 +14,7 @@ const HealthTab = ({
   completedMilestones,
   toggleMilestone
 }) => {
-  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아', '영아 후기', '걸음마기', '유아 초기'];
+  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아기 (0~1개월)', '영아기 (1~12개월)', '유아기 (1~3세)', '학령전기 (3~6세)'];
   const [vaxFilter, setVaxFilter] = React.useState('전체');
 
   const vaxAgeGroups = [
@@ -50,7 +50,7 @@ const HealthTab = ({
     >
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div className="shrink-0">
-          <h3 className="text-2xl font-black text-brand-gray-900 dark:text-white tracking-tight">소아 건강 지능</h3>
+          <h3 className="text-2xl font-black text-brand-gray-900 dark:text-white tracking-tight">소아 건강 관리</h3>
           <p className="text-brand-gray-500 dark:text-brand-gray-400 mt-1 text-[13px] font-medium leading-tight">질병청 및 K-DST 표준 기반 맞춤 가이드</p>
         </div>
         
