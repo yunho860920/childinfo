@@ -32,7 +32,7 @@ const PracticalTab = ({ childInfo }) => {
     { id: '건강·안전', icon: <ShieldCheck size={16} /> }
   ];
 
-  const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 36];
+  const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
   
   const filteredData = (ageTimelineData || []).filter(item => {
     const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
