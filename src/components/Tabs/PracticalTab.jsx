@@ -37,16 +37,14 @@ const PracticalTab = ({ childInfo }) => {
   const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
   
   const filteredData = (ageTimelineData || []).filter(item => {
-    // 전용 훈련 카테고리 선택 시 월령 필터를 무시하고 모든 단계를 보여줌
-    const isSpecialCategory = selectedCategory === '기저귀 떼기' || selectedCategory === '이유식 훈련';
     const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
-    const matchMonth = isSpecialCategory ? true : item.month === selectedTimelineMonth;
+    const matchMonth = item.month === selectedTimelineMonth;
     const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         item.summary.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchMonth && matchSearch;
   }).sort((a, b) => {
-    // 단계별 정렬
-    if ((selectedCategory === '기저귀 떼기' || selectedCategory === '이유식 훈련') && a.step && b.step) {
+    // 단계별 정렬 (같은 달에 여러 카드인 경우)
+    if (a.step && b.step) {
       return a.step - b.step;
     }
     return 0;
