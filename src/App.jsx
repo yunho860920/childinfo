@@ -434,6 +434,7 @@ function App() {
   };
 
   const handleLogoClick = () => {
+    setActiveTab('health');
     const now = Date.now();
     if (now - logoLastClick < 1000) {
       const newCount = logoClickCount + 1;
