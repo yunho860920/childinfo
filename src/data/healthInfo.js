@@ -126,6 +126,42 @@ export const growthMilestones = [
       { id: 'm36_name', name: '이름 말하기', desc: '자신의 이름과 성별을 말할 수 있나요?', type: 'Language' },
       { id: 'm36_circle', name: '원 그리기', desc: '동그라미 모양을 흉내 내어 그리나요?', type: 'Cognitive' }
     ]
+  },
+  {
+    months: 48,
+    label: '만 4세 (48개월)',
+    items: [
+      { id: 'm48_hop', name: '한 발로 뛰기', desc: '한 발로 서서 균형을 잡거나 뛸 수 있나요?', type: 'Physical' },
+      { id: 'm48_story', name: '이야기 하기', desc: '최근 있었던 일을 문장으로 이야기하나요?', type: 'Language' },
+      { id: 'm48_play', name: '협동 놀이', desc: '다른 아이들과 규칙을 지키며 함께 노나요?', type: 'Social' }
+    ]
+  },
+  {
+    months: 60,
+    label: '만 5세 (60개월)',
+    items: [
+      { id: 'm60_draw', name: '사람 그리기', desc: '신체 부위가 6개 이상 포함된 사람을 그리나요?', type: 'Cognitive' },
+      { id: 'm60_future', name: '미래 시제 사용', desc: '내일 무엇을 할 것인지 말할 수 있나요?', type: 'Language' },
+      { id: 'm60_dress', name: '스스로 옷 입기', desc: '도움 없이 혼자서 옷을 입고 벗나요?', type: 'Physical' }
+    ]
+  },
+  {
+    months: 72,
+    label: '만 6세 (72개월)',
+    items: [
+      { id: 'm72_bike', name: '두발 자전거 타기', desc: '보조바퀴 없이 자전거를 타거나 균형을 잡나요?', type: 'Physical' },
+      { id: 'm72_read', name: '간단한 글 읽기', desc: '익숙한 단어나 짧은 문장을 읽을 수 있나요?', type: 'Cognitive' },
+      { id: 'm72_rule', name: '규칙 이해', desc: '게임의 규칙을 이해하고 순서를 기다리나요?', type: 'Social' }
+    ]
+  },
+  {
+    months: 84,
+    label: '만 7세 (84개월)',
+    items: [
+      { id: 'm84_sport', name: '스포츠 참여', desc: '축구, 수영 등 규칙이 있는 스포츠를 즐기나요?', type: 'Physical' },
+      { id: 'm84_math', name: '기초 연산', desc: '간단한 한 자리 수 덧셈과 뺄셈을 하나요?', type: 'Cognitive' },
+      { id: 'm84_friend', name: '단짝 친구', desc: '특정 친구와 깊은 관계를 맺고 어울리나요?', type: 'Social' }
+    ]
   }
 ];
 
@@ -168,6 +204,16 @@ export const ageHealthData = [
       { name: '아데노이드 비대증', desc: '코골이가 심하거나 입을 벌리고 자는 경우, 잦은 중이염이 발생하면 확인이 필요합니다.', needsDoctor: true, doctorNote: '수면 다원 검사 및 이비인후과 진료를 권장합니다.' },
       { name: '언어 발달 지연', desc: '또래보다 언어 표현이 현저히 늦고 의사소통에 어려움이 있을 경우 발달 평가를 받아보세요.', needsDoctor: true, doctorNote: '조기 개입 및 언어 치료가 필요할 수 있습니다.' },
       { name: '사회성 및 감정 조절', desc: '친구들과 잘 어울리는지, 감정을 말로 표현하는지 관찰하고 공감해 주세요.', needsDoctor: false }
+    ]
+  },
+  {
+    ageLabel: '학령기 (만 7세)',
+    border: 'border-pink-500',
+    conditions: [
+      { name: '시력 저하 및 틱 장애', desc: '학습량이 늘며 근시가 급증하거나, 스트레스로 인한 눈 깜빡임 등 틱 증상이 나타날 수 있습니다.', needsDoctor: true, doctorNote: '안과 검진 및 심리적 안정 환경 조성이 필요합니다.' },
+      { name: '주의력결핍 과다행동장애(ADHD)', desc: '학교 생활 중 산만함이나 충동성이 심해 학습에 지장이 있는 경우 확인이 필요합니다.', needsDoctor: true, doctorNote: '전문의의 정확한 진단 및 상담이 권장됩니다.' },
+      { name: '소아 비만 및 성조숙증', desc: '서구화된 식습관과 운동 부족으로 비만이 오기 쉬우며, 2차 성징이 너무 빨리 나타날 수 있습니다.', needsDoctor: true, doctorNote: '체중 관리 및 성장판/호르몬 검사가 필요할 수 있습니다.' },
+      { name: '영구치 맹출 및 충치 관리', desc: '유치가 빠지고 영구치가 나기 시작합니다. 올바른 양치 습관과 정기적인 치과 검진이 필수입니다.', needsDoctor: false }
     ]
   }
 ];

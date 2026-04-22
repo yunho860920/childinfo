@@ -14,7 +14,7 @@ const HealthTab = ({
   completedMilestones,
   toggleMilestone
 }) => {
-  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아기 (0~1개월)', '영아기 (1~12개월)', '유아기 (1~3세)', '학령전기 (3~6세)'];
+  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아기 (0~1개월)', '영아기 (1~12개월)', '유아기 (1~3세)', '학령전기 (3~6세)', '학령기 (만 7세)'];
   const [vaxFilter, setVaxFilter] = React.useState('전체');
 
   const vaxAgeGroups = [
