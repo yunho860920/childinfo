@@ -32,16 +32,26 @@ export const consultationService = {
   async getAllConsultations() {
     if (!isSupabaseReady()) return {};
     try {
+      // Fetch all messages ordered by time ASC so groups have them in chronological order
       const { data, error } = await supabase
         .from('consultations')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('SHIELD Agent: getAllConsultations fetch error:', error);
+        throw error;
+      }
       
-      const grouped = (data || []).reduce((acc, msg) => {
-        if (!acc[msg.user_id]) acc[msg.user_id] = [];
-        acc[msg.user_id].push(msg);
+      if (!data || data.length === 0) {
+        console.log('SHIELD Agent: No consultation data found.');
+        return {};
+      }
+
+      const grouped = data.reduce((acc, msg) => {
+        const uid = msg.user_id;
+        if (!acc[uid]) acc[uid] = [];
+        acc[uid].push(msg);
         return acc;
       }, {});
       

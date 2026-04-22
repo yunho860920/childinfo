@@ -5,10 +5,10 @@ import { Sun, Moon } from 'lucide-react';
 const ThemeToggle = ({ darkMode, setDarkMode }) => (
   <button
     onClick={() => setDarkMode(!darkMode)}
-    className="p-2 rounded-full hover:bg-brand-gray-100  transition-all active:scale-90"
+    className="p-2 text-brand-gray-500 hover:bg-brand-gray-100 dark:hover:bg-apple-elevated rounded-full transition-all active:scale-90"
     aria-label="Toggle theme"
   >
-    {darkMode ? <Sun className="text-white" size={24} /> : <Moon className="text-brand-gray-800" size={24} />}
+    {darkMode ? <Sun size={22} /> : <Moon size={22} />}
   </button>
 );
 

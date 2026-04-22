@@ -71,35 +71,35 @@ const TemperatureCard = ({
   const isHighFever = selectedTemp >= 38;
 
   return (
-    <div className="bg-white dark:bg-apple-card p-8 rounded-[3rem] border border-[var(--apple-border)] shadow-soft relative flex flex-col h-full overflow-hidden">
+    <div className="card-container p-7 flex flex-col h-full">
       {/* Header Row */}
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between mb-8">
         <div className="flex flex-col">
-          <h3 className="text-[18px] font-black text-brand-gray-900 dark:text-white tracking-tight">실시간 체온 피드백</h3>
-          <p className="text-[11px] font-bold text-blue-500 opacity-70 uppercase tracking-widest mt-1">KCDC Health Smart Care</p>
+          <h3 className="text-[17px] font-bold text-brand-gray-800 dark:text-white tracking-tight">실시간 체온 피드백</h3>
+          <p className="text-[12px] font-medium text-brand-gray-400 mt-0.5">상태 분석 및 대처 가이드</p>
         </div>
       </div>
 
       {/* Main Grid: Circle on Left, Inputs on Right */}
-      <div className="flex items-center gap-8 mb-8">
+      <div className="flex flex-col sm:flex-row items-center gap-8 mb-8">
         {/* Left: Progress Ring */}
-        <div className="shrink-0 scale-110 sm:scale-100">
+        <div className="shrink-0">
           <ProgressRing 
             percentage={tempPercentage} 
-            size={120} 
-            strokeWidth={12}
+            size={130} 
+            strokeWidth={10}
             onShowChart={onShowChart}
             id="temp-gradient"
-            gradientColors={isHighFever ? ["#EF4444", "#F87171"] : ["#3B82F6", "#60A5FA"]}
+            gradientColors={isHighFever ? ["#F04452", "#FF6B6B"] : ["#3182F6", "#4DACFF"]}
           >
             <div className="flex flex-col items-center">
               <div className="flex items-baseline gap-0.5">
-                <span className={cn("text-3xl font-black tracking-tighter", isHighFever ? "text-red-500" : "text-blue-500")}>
+                <span className={cn("text-3xl font-bold tracking-tighter", isHighFever ? "text-brand-primary" : "text-brand-secondary")}>
                   {inputVal}
                 </span>
-                <span className={cn("text-xs font-black", isHighFever ? "text-red-500/60" : "text-blue-500/60")}>°C</span>
+                <span className={cn("text-xs font-bold", isHighFever ? "text-brand-primary/60" : "text-brand-secondary/60")}>°C</span>
               </div>
-              <span className={cn("text-[10px] font-black uppercase tracking-widest mt-0.5", isHighFever ? "text-red-400" : "text-blue-400")}>
+              <span className={cn("text-[11px] font-medium mt-1", isHighFever ? "text-brand-primary" : "text-brand-secondary")}>
                 {status.label}
               </span>
             </div>
@@ -107,29 +107,29 @@ const TemperatureCard = ({
         </div>
 
         {/* Right: Info Area */}
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 w-full space-y-4">
           {/* Temperature Numeric Input */}
           <div className="space-y-1.5">
-            <p className="text-[11px] font-black text-brand-gray-400 uppercase tracking-tight ml-1">현재 체온 입력</p>
-            <div className={cn("p-3 rounded-2xl border flex items-center justify-center h-12 transition-all", isHighFever ? "bg-red-50/30 border-red-200/50" : "bg-blue-50/30 border-blue-200/50")}>
+            <p className="text-[12px] font-bold text-brand-gray-500 ml-1">현재 체온 입력</p>
+            <div className={cn("p-3 rounded-2xl border border-transparent h-12 transition-all", isHighFever ? "bg-brand-primary/5" : "bg-brand-secondary/5")}>
               <input 
                 type="number" 
                 step="0.1"
                 value={inputVal || ''} 
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => handleTempChange(e.target.value)}
-                className={cn("w-full bg-transparent border-none outline-none text-[15px] font-black text-center", isHighFever ? "text-red-500" : "text-blue-500")}
+                className={cn("w-full bg-transparent border-none outline-none text-[15px] font-bold text-center", isHighFever ? "text-brand-primary" : "text-brand-secondary")}
               />
             </div>
           </div>
 
           {/* Guidelines Box */}
-          <div className={cn("p-4 rounded-2xl flex flex-col gap-1", status.bg)}>
+          <div className={cn("p-4 rounded-2xl flex flex-col gap-1 transition-colors", status.bg)}>
             <div className="flex items-center justify-between">
-              <span className={cn("text-[11px] font-black uppercase tracking-widest", status.color)}>{status.label}</span>
-              {selectedTemp >= 38 && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
+              <span className={cn("text-[12px] font-bold", status.color)}>{status.label}</span>
+              {selectedTemp >= 38 && <AlertCircle size={14} className="text-brand-primary animate-pulse" />}
             </div>
-            <span className="text-[11px] font-bold text-brand-gray-500 dark:text-brand-gray-400 leading-tight">{status.desc}</span>
+            <span className="text-[12px] font-medium text-brand-gray-500 dark:text-brand-gray-400 leading-tight">{status.desc}</span>
           </div>
         </div>
       </div>
@@ -137,13 +137,13 @@ const TemperatureCard = ({
       {/* Footer Area: Actions & Save */}
       <div className="space-y-4 mt-auto">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-blue-50/40 dark:bg-blue-500/5 p-3 rounded-2xl border border-blue-100/50 dark:border-blue-500/10">
-            <p className="text-[10px] font-black text-blue-500/80 uppercase tracking-tight mb-1">상황별 대처</p>
-            <p className="text-[11px] font-bold text-brand-gray-900 dark:text-white leading-tight truncate">{status.action}</p>
+          <div className="bg-brand-gray-50 dark:bg-apple-elevated p-3 rounded-2xl">
+            <p className="text-[11px] font-bold text-brand-gray-400 uppercase tracking-tight mb-1">상황별 대처</p>
+            <p className="text-[13px] font-bold text-brand-gray-800 dark:text-white leading-tight truncate">{status.action}</p>
           </div>
-          <div className="bg-blue-50/40 dark:bg-blue-500/5 p-3 rounded-2xl border border-blue-100/50 dark:border-blue-500/10">
-            <p className="text-[10px] font-black text-blue-500/80 uppercase tracking-tight mb-1">복용 가이드</p>
-            <p className={cn("text-[11px] font-bold leading-tight truncate", selectedTemp >= 38.5 ? "text-red-500" : "text-brand-gray-900 dark:text-white")}>{status.meds}</p>
+          <div className="bg-brand-gray-50 dark:bg-apple-elevated p-3 rounded-2xl">
+            <p className="text-[11px] font-bold text-brand-gray-400 uppercase tracking-tight mb-1">복용 가이드</p>
+            <p className={cn("text-[13px] font-bold leading-tight truncate", selectedTemp >= 38.5 ? "text-brand-primary" : "text-brand-gray-800 dark:text-white")}>{status.meds}</p>
           </div>
         </div>
 
@@ -155,12 +155,12 @@ const TemperatureCard = ({
               if (!hasTakenMeds) setMedType('acetaminophen');
               else setMedType('none');
             }}
-            className="flex items-center gap-3 p-3 bg-blue-50/40 dark:bg-blue-500/5 rounded-2xl border border-blue-100/50 dark:border-blue-500/10 cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-500/10 transition-colors"
+            className="flex items-center gap-3 p-3 bg-brand-gray-50 dark:bg-apple-elevated rounded-2xl cursor-pointer hover:bg-brand-gray-100 transition-colors"
           >
-            <div className={cn("w-5 h-5 rounded-md border flex items-center justify-center transition-all", hasTakenMeds ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-apple-card border-blue-200/50 dark:border-blue-500/20")}>
+            <div className={cn("w-5 h-5 rounded-md border flex items-center justify-center transition-all", hasTakenMeds ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-apple-card border-brand-gray-200 dark:border-apple-border")}>
               {hasTakenMeds && <CheckCircle2 size={14} />}
             </div>
-            <span className="text-[12px] font-bold text-blue-600 dark:text-blue-400">현재 해열제 복용함</span>
+            <span className="text-[13px] font-bold text-brand-gray-700 dark:text-brand-gray-300">현재 해열제 복용함</span>
           </div>
 
           {hasTakenMeds && (
@@ -171,13 +171,13 @@ const TemperatureCard = ({
             >
               <button 
                 onClick={() => setMedType('acetaminophen')}
-                className={cn("py-2.5 px-3 rounded-xl text-[11px] font-black transition-all border", medType === 'acetaminophen' ? "bg-emerald-500 text-white border-emerald-500" : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 border-transparent")}
+                className={cn("py-2.5 px-3 rounded-xl text-[12px] font-bold transition-all", medType === 'acetaminophen' ? "bg-emerald-500 text-white" : "bg-brand-gray-100 dark:bg-apple-elevated text-brand-gray-500")}
               >
                 아세트아미노펜
               </button>
               <button 
                 onClick={() => setMedType('ibuprofen')}
-                className={cn("py-2.5 px-3 rounded-xl text-[11px] font-black transition-all border", medType === 'ibuprofen' ? "bg-emerald-500 text-white border-emerald-500" : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 border-transparent")}
+                className={cn("py-2.5 px-3 rounded-xl text-[12px] font-bold transition-all", medType === 'ibuprofen' ? "bg-emerald-500 text-white" : "bg-brand-gray-100 dark:bg-apple-elevated text-brand-gray-500")}
               >
                 이부프로펜 계열
               </button>
@@ -193,10 +193,10 @@ const TemperatureCard = ({
             setHasTakenMeds(false);
             setMedType('none');
           }}
-          className="w-full py-4 bg-blue-500 text-white rounded-[1.5rem] font-black text-[13px] shadow-lg shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2"
+          className={cn("w-full py-4 rounded-2xl font-bold text-[14px] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2", isHighFever ? "bg-brand-primary text-white" : "bg-brand-secondary text-white")}
         >
-          <Save size={14} />
-          현재 체온 데이터 저장
+          <Save size={16} />
+          현재 체온 데이터 저장하기
         </button>
       </div>
     </div>

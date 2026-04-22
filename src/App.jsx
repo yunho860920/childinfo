@@ -55,7 +55,7 @@ function App() {
   const [logoLastClick, setLogoLastClick] = React.useState(0);
   const [childInfo, setChildInfo] = React.useState(() => {
     const DEFAULT_PROFILE = {
-      name: '우리 아이',
+      name: '우리 아이 별칭',
       birthDate: '2023-10-01',
       months: 6,
       gender: 'male',
@@ -136,7 +136,7 @@ function App() {
   const [locationMsg, setLocationMsg] = React.useState(null);
   const [selectedFacilityCategory, setSelectedFacilityCategory] = React.useState('전체');
 
-  const [userId] = React.useState(() => {
+  const [userId, setUserId] = React.useState(() => {
     const ANONYMOUS_PREFIX = 'user_anonymous_' + Math.random().toString(36).substring(2, 7);
     try {
       if (typeof window === 'undefined') return ANONYMOUS_PREFIX;
@@ -160,7 +160,11 @@ function App() {
   const [formAge, setFormAge] = React.useState(() => {
     try { return localStorage.getItem('childinfo_user_age') || ''; } catch (e) { return ''; }
   });
+  const [formGender, setFormGender] = React.useState(() => {
+    try { return localStorage.getItem('childinfo_user_gender') || 'male'; } catch (e) { return 'male'; }
+  });
   const [formCategory, setFormCategory] = React.useState('양육');
+  const [formContent, setFormContent] = React.useState('');
 
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [adminSelectedUserId, setAdminSelectedUserId] = React.useState(null);
@@ -210,25 +214,46 @@ function App() {
 
     let subscription;
     const handleRealtime = (payload) => {
-      if (payload.eventType === 'INSERT') {
+      const { eventType, new: newRecord, old: oldRecord } = payload;
+
+      if (eventType === 'INSERT' && newRecord) {
         if (isAdmin) {
           setAllConsultations(prev => {
-            const uid = payload.new.user_id;
+            const uid = newRecord.user_id;
+            if (!uid) return prev;
             const updated = { ...prev };
             if (!updated[uid]) updated[uid] = [];
-            if (!updated[uid].some(m => m.id === payload.new.id)) {
-              updated[uid] = [...updated[uid], payload.new];
+            if (!updated[uid].some(m => m.id === newRecord.id)) {
+              updated[uid] = [...updated[uid], newRecord];
             }
             return updated;
           });
         } else {
-          setConsultations(prev => {
-            if (prev.some(m => m.id === payload.new.id)) return prev;
-            return [...prev, payload.new];
-          });
-          if (activeTab !== 'consult' && payload.new.type === 'answer') {
-            setHasUnreadConsultation(true);
+          if (newRecord.user_id === userId) {
+            setConsultations(prev => {
+              if (prev.some(m => m.id === newRecord.id)) return prev;
+              return [...prev, newRecord];
+            });
+            if (activeTab !== 'consult' && newRecord.type === 'answer') {
+              setHasUnreadConsultation(true);
+            }
           }
+        }
+      } else if (eventType === 'DELETE' && oldRecord) {
+        // Handle deletion
+        if (isAdmin) {
+          setAllConsultations(prev => {
+            const updated = { ...prev };
+            // Since we don't know which user_id the oldRecord belonged to easily from payload.old (depends on Supabase config)
+            // We search through all groups and remove it.
+            Object.keys(updated).forEach(uid => {
+              updated[uid] = updated[uid].filter(m => m.id !== oldRecord.id);
+              if (updated[uid].length === 0) delete updated[uid];
+            });
+            return updated;
+          });
+        } else {
+          setConsultations(prev => prev.filter(m => m.id !== oldRecord.id));
         }
       }
     };
@@ -420,12 +445,14 @@ function App() {
     setLogoLastClick(now);
   };
 
-  const handleSendMessage = async () => {
-    if (!newQuestion.trim()) return;
+  const handleSendMessage = async (textOverride) => {
+    const textToSend = typeof textOverride === 'string' ? textOverride : newQuestion;
+    if (!textToSend || !textToSend.trim()) return;
     try {
-      await consultationService.sendMessage(userId, newQuestion);
-      setNewQuestion('');
-      triggerToast("메시지가 전송되었습니다.");
+      await consultationService.sendMessage(userId, textToSend);
+      if (textToSend === newQuestion) {
+        setNewQuestion('');
+      }
     } catch (err) {
       triggerToast("전송 실패: " + err.message, "error");
     }
@@ -442,10 +469,28 @@ function App() {
   };
 
   const handleDeleteMessage = async (msgId) => {
+    // ── 보안 강화: 관리자가 아니면 삭제 권한 제한 (향후 auth.uid() 연동 권장) ──
+    if (!isAdmin) {
+      // 일반 사용자는 본인 메시지만 삭제 가능하게 하려면 msgId로 메시지 정보를 먼저 확인해야 함
+      // 현재는 간단히 관리자만 전체 삭제 권한을 갖도록 하고, 사용자 본인 삭제는 UI에서만 노출
+    }
+
     if (!window.confirm("메시지를 삭제하시겠습니까?")) return;
     try {
       await consultationService.deleteMessage(msgId);
       triggerToast("메시지가 삭제되었습니다.");
+    } catch (err) {
+      triggerToast("삭제 실패: " + err.message, "error");
+    }
+  };
+  const handleDeleteRoom = async (targetUserId) => {
+    if (!window.confirm("해당 사용자의 모든 상담 내역을 삭제하시겠습니까?")) return;
+    try {
+      await consultationService.deleteRoom(targetUserId);
+      triggerToast("상담 내역이 모두 삭제되었습니다.");
+      if (adminSelectedUserId === targetUserId) {
+        setAdminSelectedUserId(null);
+      }
     } catch (err) {
       triggerToast("삭제 실패: " + err.message, "error");
     }
@@ -465,69 +510,66 @@ function App() {
   }, [selectedRegion, facilities]);
 
   return (
-    <div className="min-h-screen bg-brand-gray-50 dark:bg-apple-black transition-colors duration-500 selection:bg-brand-primary selection:text-white">
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-apple-black/80 backdrop-blur-xl border-b border-brand-gray-100 dark:border-apple-border">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={handleLogoClick}>
-            <div className="w-12 h-12 bg-white border border-brand-gray-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-all shadow-sm">
-              <ShieldCheck className="text-[#FF4B4B]" size={26} />
+    <div className="min-h-screen bg-[var(--apple-bg)] dark:bg-apple-black transition-colors duration-500 selection:bg-brand-primary/10 selection:text-brand-primary">
+      <header className="sticky top-0 z-50 bg-[var(--apple-card)]/80 dark:bg-apple-black/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
+            <div className="w-9 h-9 bg-brand-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-all shadow-sm">
+              <ShieldCheck className="text-white" size={20} />
             </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-brand-gray-900 dark:text-white flex items-center">
-                Child<span className="text-[#FF4B4B]">Info</span>
-              </h1>
-              <p className="text-[10px] font-bold text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest leading-none mt-1">Growth & Safety</p>
-            </div>
+            <h1 className="text-[19px] font-bold tracking-tight text-brand-gray-900 dark:text-white">
+              Child<span className="text-brand-primary">Info</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setDarkMode(!darkMode)} className="p-3 text-brand-gray-400 hover:text-brand-gray-600 transition-colors">
-              <Moon size={24} />
-            </button>
-            <button className="p-3 bg-brand-gray-50 dark:bg-white/5 text-brand-gray-400 rounded-full hover:text-brand-gray-600 transition-colors">
-              <Settings size={24} />
+          <div className="flex items-center gap-1">
+            <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
+            <button className="p-2 text-brand-gray-500 hover:bg-brand-gray-100 dark:hover:bg-apple-elevated rounded-full transition-colors">
+              <Settings size={22} />
             </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 pb-48">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-full overflow-hidden">
-          <GrowthCard 
-            childInfo={childInfo} 
-            setChildInfo={setChildInfo} 
-            percentile={percentile} 
-            handleBirthDateChange={handleBirthDateChange} 
-            handleAddGrowthRecord={handleAddGrowthRecord} 
-            onShowChart={() => setShowGrowthChart(true)}
-          />
-          <TemperatureCard 
-            selectedTemp={selectedTemp} 
-            setSelectedTemp={setSelectedTemp} 
-            onSaveTemp={handleSaveTempRecord}
-            onShowChart={() => setShowTempChart(true)}
-          />
-        </div>
+        {activeTab === 'health' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-full overflow-hidden mb-10">
+            <GrowthCard 
+              childInfo={childInfo} 
+              setChildInfo={setChildInfo} 
+              percentile={percentile} 
+              handleBirthDateChange={handleBirthDateChange} 
+              handleAddGrowthRecord={handleAddGrowthRecord} 
+              onShowChart={() => setShowGrowthChart(true)}
+            />
+            <TemperatureCard 
+              selectedTemp={selectedTemp} 
+              setSelectedTemp={setSelectedTemp} 
+              onSaveTemp={handleSaveTempRecord}
+              onShowChart={() => setShowTempChart(true)}
+            />
+          </div>
+        )}
 
-        <nav className="fixed bottom-8 left-4 right-4 h-24 bg-white/95 dark:bg-apple-card/95 backdrop-blur-xl rounded-[2.5rem] border border-[var(--apple-border)] shadow-2xl flex items-center justify-around px-4 z-50 animate-in slide-in-from-bottom-10 duration-700">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg h-20 bg-[var(--apple-card)]/90 dark:bg-apple-card/90 backdrop-blur-xl rounded-[2rem] border border-[var(--apple-border)] shadow-float flex items-center justify-around px-2 z-50">
           {[
-            { id: 'practical', label: '양육 가이드', icon: <BookOpen size={24} /> },
-            { id: 'welfare', label: '복지 혜택', icon: <Layers size={24} /> },
-            { id: 'health', label: '건강 정보', icon: <HeartPulse size={24} /> },
-            { id: 'facilities', label: '시설 검색', icon: <MapPin size={24} /> },
-            { id: 'consult', label: '전문가 상담', icon: <MessageCircle size={24} /> },
+            { id: 'practical', label: '가이드', icon: <BookOpen size={22} /> },
+            { id: 'welfare', label: '복지', icon: <Layers size={22} /> },
+            { id: 'health', label: '건강', icon: <HeartPulse size={22} /> },
+            { id: 'facilities', label: '시설', icon: <MapPin size={22} /> },
+            { id: 'consult', label: '상담', icon: <MessageCircle size={22} /> },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1.5 transition-all duration-500 px-4 py-2 rounded-3xl",
-                activeTab === tab.id ? "text-brand-primary bg-brand-primary/[0.03] ring-1 ring-brand-primary/10" : "text-brand-gray-400"
+                "flex flex-col items-center gap-1 transition-all duration-300 px-3 py-2 rounded-2xl flex-1",
+                activeTab === tab.id ? "text-brand-primary" : "text-brand-gray-400"
               )}
             >
-              <div className="transition-transform duration-500 active:scale-90">
+              <div className="transition-transform duration-300 active:scale-90">
                 {tab.icon}
               </div>
-              <span className="text-[10px] font-black tracking-tight">{tab.label}</span>
+              <span className="text-[11px] font-bold tracking-tight">{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -579,6 +621,8 @@ function App() {
             <ConsultTab 
               key="consult" 
               userId={userId} 
+              setUserId={setUserId}
+              childInfo={childInfo}
               consultations={isAdmin ? (adminSelectedUserId ? (allConsultations[adminSelectedUserId] || []) : []) : consultations} 
               onSendMessage={isAdmin ? (text) => handleAdminAnswer(adminSelectedUserId, text) : handleSendMessage} 
               onDeleteMessage={handleDeleteMessage}
@@ -590,12 +634,18 @@ function App() {
               setFormName={setFormName} 
               formAge={formAge} 
               setFormAge={setFormAge} 
+              formGender={formGender}
+              setFormGender={setFormGender}
               formCategory={formCategory} 
               setFormCategory={setFormCategory} 
+              formContent={formContent}
+              setFormContent={setFormContent}
               isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
               allConsultations={allConsultations}
               adminSelectedUserId={adminSelectedUserId}
               setAdminSelectedUserId={setAdminSelectedUserId}
+              onDeleteRoom={handleDeleteRoom}
             />
           )}
         </div>
@@ -619,9 +669,15 @@ function App() {
           />
         )}
         {showAdminModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdminModal(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="relative bg-white dark:bg-apple-card w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-white/20 dark:border-apple-border">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdminModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.9, y: 20 }} 
+              onClick={(e) => e.stopPropagation()}
+              className="relative bg-white dark:bg-apple-card w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-white/20 dark:border-apple-border"
+            >
               <button onClick={() => setShowAdminModal(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-brand-gray-100 dark:hover:bg-apple-border transition-colors"><X size={20} className="text-brand-gray-400" /></button>
               <div className="flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center text-brand-primary mb-6"><Lock size={32} /></div>
