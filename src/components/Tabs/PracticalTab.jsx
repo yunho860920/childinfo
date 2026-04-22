@@ -31,7 +31,8 @@ const PracticalTab = ({ childInfo }) => {
     { id: '수면·심리와 정서', icon: <Moon size={16} /> },
     { id: '건강·안전', icon: <ShieldCheck size={16} /> },
     { id: '기저귀 떼기', icon: <Gamepad2 size={16} /> },
-    { id: '이유식 훈련', icon: <Utensils size={16} /> }
+    { id: '이유식 훈련', icon: <Utensils size={16} /> },
+    { id: '걷기 훈련', icon: <Baby size={16} /> }
   ];
 
   const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
@@ -58,6 +59,7 @@ const PracticalTab = ({ childInfo }) => {
       case '건강·안전': return 'from-rose-500/20 to-pink-500/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20';
       case '기저귀 떼기': return 'from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
       case '이유식 훈련': return 'from-amber-500/20 to-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20';
+      case '걷기 훈련': return 'from-blue-500/20 to-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-500/20';
       default: return 'from-gray-500/10 to-gray-400/10 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-500/20';
     }
   };
@@ -70,6 +72,7 @@ const PracticalTab = ({ childInfo }) => {
       case '건강·안전': return <ShieldCheck size={18} />;
       case '기저귀 떼기': return <Gamepad2 size={18} />;
       case '이유식 훈련': return <Utensils size={18} />;
+      case '걷기 훈련': return <Baby size={18} />;
       default: return <Sparkles size={18} />;
     }
   };
