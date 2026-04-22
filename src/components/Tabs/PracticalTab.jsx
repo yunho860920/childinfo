@@ -29,17 +29,25 @@ const PracticalTab = ({ childInfo }) => {
     { id: '성장·발달', icon: <Baby size={16} /> },
     { id: '영양·식사', icon: <Utensils size={16} /> },
     { id: '수면·심리와 정서', icon: <Moon size={16} /> },
-    { id: '건강·안전', icon: <ShieldCheck size={16} /> }
+    { id: '건강·안전', icon: <ShieldCheck size={16} /> },
+    { id: '기저귀 떼기', icon: <Gamepad2 size={16} /> }
   ];
 
   const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
   
   const filteredData = (ageTimelineData || []).filter(item => {
+    // '기저귀 떼기' 카테고리 선택 시 월령 필터를 무시하고 모든 단계를 보여줌
     const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
-    const matchMonth = item.month === selectedTimelineMonth;
+    const matchMonth = selectedCategory === '기저귀 떼기' ? true : item.month === selectedTimelineMonth;
     const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         item.summary.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchMonth && matchSearch;
+  }).sort((a, b) => {
+    // 기저귀 떼기 단계별 정렬
+    if (selectedCategory === '기저귀 떼기' && a.step && b.step) {
+      return a.step - b.step;
+    }
+    return 0;
   });
 
   const getCategoryColor = (cat) => {
@@ -48,6 +56,7 @@ const PracticalTab = ({ childInfo }) => {
       case '영양·식사': return 'from-orange-500/20 to-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20';
       case '수면·심리와 정서': return 'from-blue-500/20 to-cyan-500/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20';
       case '건강·안전': return 'from-rose-500/20 to-pink-500/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20';
+      case '기저귀 떼기': return 'from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
       default: return 'from-gray-500/10 to-gray-400/10 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-500/20';
     }
   };
@@ -58,6 +67,7 @@ const PracticalTab = ({ childInfo }) => {
       case '영양·식사': return <Utensils size={18} />;
       case '수면·심리와 정서': return <Moon size={18} />;
       case '건강·안전': return <ShieldCheck size={18} />;
+      case '기저귀 떼기': return <Gamepad2 size={18} />;
       default: return <Sparkles size={18} />;
     }
   };
@@ -185,7 +195,7 @@ const PracticalTab = ({ childInfo }) => {
                 )} />
 
                 <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-6">
+                  <div className="flex justify-between items-start mb-4">
                     <div className={cn(
                       "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-gradient-to-br",
                       getCategoryColor(item.category)
@@ -194,6 +204,21 @@ const PracticalTab = ({ childInfo }) => {
                       {item.category}
                     </div>
                   </div>
+
+                  {/* Illustration Image */}
+                  {item.image && (
+                    <div className="relative mb-6 -mx-2">
+                      <div className={cn(
+                        "absolute inset-0 blur-2xl opacity-20 -z-10",
+                        getCategoryColor(item.category).split(' ')[0]
+                      )} />
+                      <img 
+                        src={item.image} 
+                        alt={item.title}
+                        className="w-full h-40 object-contain drop-shadow-2xl transform group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
 
                   <h4 className="text-xl font-black text-brand-gray-900 dark:text-white mb-3 group-hover:text-brand-primary transition-colors leading-tight">
                     {item.title}

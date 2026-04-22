@@ -1,7 +1,7 @@
 // src/constants/uiConstants.js
 
 export const PRACTICAL_CATEGORIES = [
-  '전체', '성장·발달', '영양·식사', '수면·심리와 정서', '건강·안전'
+  '전체', '성장·발달', '영양·식사', '수면·심리와 정서', '건강·안전', '기저귀 떼기'
 ];
 
 export const WELFARE_STAGES = [
