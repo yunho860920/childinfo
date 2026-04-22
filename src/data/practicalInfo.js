@@ -277,5 +277,70 @@ export const ageTimelineData = [
     image: '/images/baby/eating.png',
     summary: '균형 잡힌 영양 섭취와 건강한 식습관이 완성되는 시기입니다.',
     points: ['골고루 먹는 습관', '과도한 단 음식 제한', '식사 전 손 씻기 습관', '가족과 함께하는 대화형 식사']
+  },
+
+  // --- 이유식 훈련 전용 데이터 ---
+  {
+    month: 6,
+    category: '이유식 훈련',
+    step: 1,
+    title: '1단계: 초기 이유식 훈련',
+    image: '/images/baby/food_initial.png',
+    summary: '맛과 숟가락에 적응하는 시기입니다. 쌀미음부터 시작하세요.',
+    points: ['10배죽(묽은 미음)으로 시작', '하루 1회, 1~2숟가락으로 적응', '3~4일 간격으로 새로운 재료 추가', '간(소금, 설탕) 절대 금지']
+  },
+  {
+    month: 6,
+    category: '이유식 훈련',
+    step: 2,
+    title: '초기 추천 식재료 조합',
+    image: '/images/baby/food_recipes.png',
+    summary: '초기 이유식에 적합한 부드럽고 알레르기 위험이 낮은 조합입니다.',
+    points: ['소고기 + 감자 + 양파 (철분 보충)', '단호박 + 쌀미음 (달콤한 적응)', '청경채 + 쌀미음 (비타민 보충)', '사과 + 쌀미음 (과일 맛 경험)']
+  },
+  {
+    month: 8,
+    category: '이유식 훈련',
+    step: 3,
+    title: '2단계: 중기 이유식 훈련',
+    image: '/images/baby/food_intermediate.png',
+    summary: '단백질 보충이 중요한 시기입니다. 입자 크기를 조금씩 늘려주세요.',
+    points: ['7배죽(으깬 형태) 및 소고기 필수 포함', '하루 2회, 50~80g 분량', '알레르기 반응 세밀하게 관찰', '다양한 식재료 경험 유도']
+  },
+  {
+    month: 8,
+    category: '이유식 훈련',
+    step: 4,
+    title: '중기 추천 식재료 조합',
+    image: '/images/baby/food_recipes.png',
+    summary: '풍부한 맛과 영양을 위한 중기 추천 조합입니다.',
+    points: ['닭안심 + 새송이버섯 + 대추 (감칠맛)', '소고기 + 애호박 + 당근 (영양 밸런스)', '대구살 + 브로콜리 + 양파 (해산물 경험)', '고구마 + 소고기 + 시금치']
+  },
+  {
+    month: 10,
+    category: '이유식 훈련',
+    step: 5,
+    title: '3단계: 후기 이유식 훈련',
+    image: '/images/baby/food_late.png',
+    summary: '핑거푸드를 통해 스스로 먹는 연습을 시작하는 시기입니다.',
+    points: ['무른밥/잘게 다진 형태', '하루 3회, 100~120g 분량', '손으로 집어 먹는 핑거푸드 시도', '가족 식사 시간과 맞추기 시작']
+  },
+  {
+    month: 10,
+    category: '이유식 훈련',
+    step: 6,
+    title: '후기 추천 식재료 조합',
+    image: '/images/baby/food_recipes.png',
+    summary: '질감을 높이고 영양 밀도를 강화한 후기 조합입니다.',
+    points: ['가자미 + 무 + 콩나물 + 애호박', '소고기 + 가지 + 양파 볶음밥', '닭고기 + 단호박 + 양배추 무른밥', '밥볼/밥전 (다진 고기+야채)']
+  },
+  {
+    month: 12,
+    category: '이유식 훈련',
+    step: 7,
+    title: '4단계: 완료기 이유식 훈련',
+    image: '/images/baby/eating.png',
+    summary: '일반 식사로 넘어가는 준비 단계입니다. 유아식으로 전환하세요.',
+    points: ['진밥 또는 일반밥 형태', '가족과 함께 식사하는 습관 형성', '생우유 및 간이 된 음식 소량 가능', '올바른 식사 예절 교육']
   }
 ];

@@ -30,21 +30,23 @@ const PracticalTab = ({ childInfo }) => {
     { id: '영양·식사', icon: <Utensils size={16} /> },
     { id: '수면·심리와 정서', icon: <Moon size={16} /> },
     { id: '건강·안전', icon: <ShieldCheck size={16} /> },
-    { id: '기저귀 떼기', icon: <Gamepad2 size={16} /> }
+    { id: '기저귀 떼기', icon: <Gamepad2 size={16} /> },
+    { id: '이유식 훈련', icon: <Utensils size={16} /> }
   ];
 
   const months = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
   
   const filteredData = (ageTimelineData || []).filter(item => {
-    // '기저귀 떼기' 카테고리 선택 시 월령 필터를 무시하고 모든 단계를 보여줌
+    // 전용 훈련 카테고리 선택 시 월령 필터를 무시하고 모든 단계를 보여줌
+    const isSpecialCategory = selectedCategory === '기저귀 떼기' || selectedCategory === '이유식 훈련';
     const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
-    const matchMonth = selectedCategory === '기저귀 떼기' ? true : item.month === selectedTimelineMonth;
+    const matchMonth = isSpecialCategory ? true : item.month === selectedTimelineMonth;
     const matchSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                         item.summary.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchMonth && matchSearch;
   }).sort((a, b) => {
-    // 기저귀 떼기 단계별 정렬
-    if (selectedCategory === '기저귀 떼기' && a.step && b.step) {
+    // 단계별 정렬
+    if ((selectedCategory === '기저귀 떼기' || selectedCategory === '이유식 훈련') && a.step && b.step) {
       return a.step - b.step;
     }
     return 0;
@@ -57,6 +59,7 @@ const PracticalTab = ({ childInfo }) => {
       case '수면·심리와 정서': return 'from-blue-500/20 to-cyan-500/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20';
       case '건강·안전': return 'from-rose-500/20 to-pink-500/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20';
       case '기저귀 떼기': return 'from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20';
+      case '이유식 훈련': return 'from-amber-500/20 to-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-500/20';
       default: return 'from-gray-500/10 to-gray-400/10 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-500/20';
     }
   };
@@ -68,6 +71,7 @@ const PracticalTab = ({ childInfo }) => {
       case '수면·심리와 정서': return <Moon size={18} />;
       case '건강·안전': return <ShieldCheck size={18} />;
       case '기저귀 떼기': return <Gamepad2 size={18} />;
+      case '이유식 훈련': return <Utensils size={18} />;
       default: return <Sparkles size={18} />;
     }
   };
