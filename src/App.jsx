@@ -228,6 +228,9 @@ function App() {
             }
             return updated;
           });
+          if (activeTab !== 'consult') {
+            setHasUnreadConsultation(true);
+          }
         } else {
           if (newRecord.user_id === userId) {
             setConsultations(prev => {
@@ -469,13 +472,31 @@ function App() {
   };
 
   const handleDeleteMessage = async (msgId) => {
+    if (msgId === 'welcome') {
+      triggerToast("기본 환영 메시지는 삭제할 수 없습니다.", "error");
+      return;
+    }
+
     // ── 보안 강화: 관리자가 아니면 삭제 권한 제한 (향후 auth.uid() 연동 권장) ──
     if (!isAdmin) {
       // 일반 사용자는 본인 메시지만 삭제 가능하게 하려면 msgId로 메시지 정보를 먼저 확인해야 함
       // 현재는 간단히 관리자만 전체 삭제 권한을 갖도록 하고, 사용자 본인 삭제는 UI에서만 노출
     }
 
-    if (!window.confirm("메시지를 삭제하시겠습니까?")) return;
+    // Optimistic UI Update
+    if (isAdmin) {
+      setAllConsultations(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(uid => {
+          updated[uid] = updated[uid].filter(m => m.id !== msgId);
+          if (updated[uid].length === 0) delete updated[uid];
+        });
+        return updated;
+      });
+    } else {
+      setConsultations(prev => prev.filter(m => m.id !== msgId));
+    }
+
     try {
       await consultationService.deleteMessage(msgId);
       triggerToast("메시지가 삭제되었습니다.");
@@ -484,7 +505,13 @@ function App() {
     }
   };
   const handleDeleteRoom = async (targetUserId) => {
-    if (!window.confirm("해당 사용자의 모든 상담 내역을 삭제하시겠습니까?")) return;
+    // Optimistic UI Update
+    setAllConsultations(prev => {
+      const updated = { ...prev };
+      delete updated[targetUserId];
+      return updated;
+    });
+
     try {
       await consultationService.deleteRoom(targetUserId);
       triggerToast("상담 내역이 모두 삭제되었습니다.");
@@ -566,8 +593,14 @@ function App() {
                 activeTab === tab.id ? "text-brand-primary" : "text-brand-gray-400"
               )}
             >
-              <div className="transition-transform duration-300 active:scale-90">
+              <div className="relative transition-transform duration-300 active:scale-90">
                 {tab.icon}
+                {tab.id === 'consult' && hasUnreadConsultation && (
+                  <span className="absolute -top-1 -right-1 flex w-2.5 h-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-apple-card shadow-sm"></span>
+                  </span>
+                )}
               </div>
               <span className="text-[11px] font-bold tracking-tight">{tab.label}</span>
             </button>

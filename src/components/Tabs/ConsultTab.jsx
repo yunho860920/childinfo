@@ -195,7 +195,7 @@ const ConsultTab = ({
             </h4>
             <button 
               onClick={() => {
-                if(window.confirm("관리자 모드를 종료하시겠습니까?")) setIsAdmin(false);
+                setIsAdmin(false);
               }}
               className="w-8 h-8 flex items-center justify-center text-brand-gray-400 hover:text-brand-primary hover:bg-brand-primary/10 rounded-xl transition-all"
               title="관리자 로그아웃"
@@ -247,7 +247,7 @@ const ConsultTab = ({
                           e.stopPropagation();
                           onDeleteRoom(uid);
                         }}
-                        className="absolute top-1/2 -right-2 -translate-y-1/2 w-8 h-8 bg-brand-gray-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity z-30 shadow-xl"
+                        className="absolute top-1/2 -right-2 -translate-y-1/2 w-8 h-8 bg-brand-gray-900 text-white rounded-full flex items-center justify-center transition-opacity z-30 shadow-xl"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -276,34 +276,21 @@ const ConsultTab = ({
             </div>
             {!isAdmin && isProfileStored && (
               <div className="flex items-center gap-2 shrink-0">
+
                 <button 
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if(window.confirm("상담 내용을 유지한 채 메인 화면으로 나가시겠습니까?")) {
-                      setIsProfileStored(false);
-                    }
-                  }}
-                  className="text-xs font-black text-brand-gray-600 hover:text-brand-primary bg-brand-gray-100 dark:bg-apple-elevated px-4 py-2.5 rounded-xl transition-all border border-transparent hover:border-brand-primary/20 shadow-sm"
-                >
-                  나가기
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if(window.confirm("기존 상담 프로필과 대화 내용을 모두 초기화하고 새 상담을 시작하시겠습니까?")) {
-                      localStorage.removeItem('childinfo_user_name');
-                      localStorage.removeItem('childinfo_user_age');
-                      localStorage.removeItem('childinfo_user_gender');
-                      localStorage.removeItem('childinfo_user_category');
-                      
-                      // Generate new User ID for a fresh session
-                      const newId = 'user_' + Math.random().toString(36).substring(2, 11);
-                      localStorage.setItem('childinfo_user_id', newId);
-                      setUserId(newId);
-                      setIsProfileStored(false);
-                    }
+                    localStorage.removeItem('childinfo_user_name');
+                    localStorage.removeItem('childinfo_user_age');
+                    localStorage.removeItem('childinfo_user_gender');
+                    localStorage.removeItem('childinfo_user_category');
+                    
+                    // Generate new User ID for a fresh session
+                    const newId = 'user_' + Math.random().toString(36).substring(2, 11);
+                    localStorage.setItem('childinfo_user_id', newId);
+                    setUserId(newId);
+                    setIsProfileStored(false);
                   }}
                   className="text-xs font-black text-white bg-brand-primary px-4 py-2.5 rounded-xl transition-all shadow-md shadow-brand-primary/20 hover:brightness-110 active:scale-95"
                 >
@@ -360,8 +347,6 @@ const ConsultTab = ({
                       }}
                       className={cn(
                         "absolute -top-3 w-8 h-8 bg-brand-gray-900 text-white rounded-full flex items-center justify-center transition-all z-30 shadow-xl border-2 border-white dark:border-apple-card",
-                        "opacity-0 group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
-                        "max-sm:opacity-100", 
                         msg.type === 'question' ? "-left-3" : "-right-3"
                       )}
                     >
