@@ -88,6 +88,7 @@ const PracticalTab = ({ childInfo }) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -20 }}
       className="space-y-10 pb-20"
     >
       {/* Header Section */}
@@ -186,99 +187,86 @@ const PracticalTab = ({ childInfo }) => {
       </div>
 
       {/* Content Cards Grid */}
-      <AnimatePresence mode="wait">
-        <motion.div 
-          key={`${selectedTimelineMonth}-${selectedCategory}-${searchQuery}`}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
-          {filteredData.length > 0 ? (
-            filteredData.map((item, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="group relative bg-white dark:bg-apple-card p-8 rounded-[3rem] border border-brand-gray-100 dark:border-apple-border shadow-sm hover:shadow-2xl transition-all duration-500"
-              >
-                {/* Card Background Glow */}
-                <div className={cn(
-                  "absolute -inset-1 rounded-[3rem] bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl",
-                  getCategoryColor(item.category)
-                )} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredData.length > 0 ? (
+          filteredData.map((item, i) => (
+            <motion.div 
+              key={`${item.title}-${i}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              className="group relative bg-white dark:bg-apple-card p-8 rounded-[3rem] border border-brand-gray-100 dark:border-apple-border shadow-sm hover:shadow-2xl transition-all duration-500"
+            >
+              {/* Card Background Glow */}
+              <div className={cn(
+                "absolute -inset-1 rounded-[3rem] bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl",
+                getCategoryColor(item.category)
+              )} />
 
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className={cn(
-                      "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-gradient-to-br",
-                      getCategoryColor(item.category)
-                    )}>
-                      {getCategoryIcon(item.category)}
-                      {item.category}
-                    </div>
-                  </div>
-
-                  {/* Illustration Image */}
-                  {item.image && (
-                    <div className="relative mb-6 -mx-2">
-                      <div className={cn(
-                        "absolute inset-0 blur-2xl opacity-20 -z-10",
-                        getCategoryColor(item.category).split(' ')[0]
-                      )} />
-                      <img 
-                        src={item.image} 
-                        alt={item.title}
-                        className="w-full h-40 object-contain drop-shadow-2xl transform group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </div>
-                  )}
-
-                  <h4 className="text-xl font-black text-brand-gray-900 dark:text-white mb-3 group-hover:text-brand-primary transition-colors leading-tight">
-                    {item.title}
-                  </h4>
-                  <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 leading-relaxed font-bold mb-8">
-                    {item.summary}
-                  </p>
-                  
-                  <div className="mt-auto space-y-4">
-                    {(item.points || []).map((p, pi) => (
-                      <motion.div 
-                        key={pi} 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + pi * 0.1 }}
-                        className="flex items-start gap-3 p-3 rounded-2xl bg-brand-gray-50 dark:bg-white/5 border border-transparent hover:border-brand-primary/10 transition-all"
-                      >
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5">
-                          <CheckCircle2 size={12} strokeWidth={3} />
-                        </div>
-                        <span className="text-xs font-bold text-brand-gray-700 dark:text-brand-gray-200 leading-snug">
-                          {p}
-                        </span>
-                      </motion.div>
-                    ))}
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-4">
+                  <div className={cn(
+                    "inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-gradient-to-br",
+                    getCategoryColor(item.category)
+                  )}>
+                    {getCategoryIcon(item.category)}
+                    {item.category}
                   </div>
                 </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full py-32 text-center bg-white dark:bg-apple-card rounded-[3rem] border-2 border-dashed border-brand-gray-100 dark:border-apple-border">
-              <div className="w-20 h-20 bg-brand-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-gray-300">
-                <BookOpen size={40} />
+
+                {/* Illustration Image */}
+                {item.image && (
+                  <div className="relative mb-6 -mx-2">
+                    <div className={cn(
+                      "absolute inset-0 blur-2xl opacity-20 -z-10",
+                      getCategoryColor(item.category).split(' ')[0]
+                    )} />
+                    <img 
+                      src={item.image} 
+                      alt={item.title}
+                      className="w-full h-40 object-contain drop-shadow-2xl transform group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
+                )}
+
+                <h4 className="text-xl font-black text-brand-gray-900 dark:text-white mb-3 group-hover:text-brand-primary transition-colors leading-tight">
+                  {item.title}
+                </h4>
+                <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 leading-relaxed font-bold mb-8">
+                  {item.summary}
+                </p>
+                
+                <div className="mt-auto space-y-4">
+                  {(item.points || []).map((p, pi) => (
+                    <div 
+                      key={pi} 
+                      className="flex items-start gap-3 p-3 rounded-2xl bg-brand-gray-50 dark:bg-white/5 border border-transparent hover:border-brand-primary/10 transition-all"
+                    >
+                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 mt-0.5">
+                        <CheckCircle2 size={12} strokeWidth={3} />
+                      </div>
+                      <span className="text-xs font-bold text-brand-gray-700 dark:text-brand-gray-200 leading-snug">
+                        {p}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h5 className="text-lg font-black text-brand-gray-900 dark:text-white mb-2">가이드를 찾을 수 없습니다</h5>
-              <p className="text-sm text-brand-gray-400 dark:text-brand-gray-500 font-bold max-w-xs mx-auto">
-                선택한 월령이나 검색어에 해당하는 가이드가 아직 준비 중이거나 없습니다. 
-                다른 월령을 선택해 보세요.
-              </p>
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full py-32 text-center bg-white dark:bg-apple-card rounded-[3rem] border-2 border-dashed border-brand-gray-100 dark:border-apple-border">
+            <div className="w-20 h-20 bg-brand-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-gray-300">
+              <BookOpen size={40} />
             </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+            <h5 className="text-lg font-black text-brand-gray-900 dark:text-white mb-2">가이드를 찾을 수 없습니다</h5>
+            <p className="text-sm text-brand-gray-400 dark:text-brand-gray-500 font-bold max-w-xs mx-auto">
+              선택한 월령이나 검색어에 해당하는 가이드가 아직 준비 중이거나 없습니다. 
+              다른 월령을 선택해 보세요.
+            </p>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 };

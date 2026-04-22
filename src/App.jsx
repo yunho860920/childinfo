@@ -532,7 +532,7 @@ function App() {
           ))}
         </nav>
 
-        <AnimatePresence>
+        <div className="relative">
           {activeTab === 'practical' && (
             <PracticalTab key="practical" childInfo={childInfo} />
           )}
@@ -598,7 +598,7 @@ function App() {
               setAdminSelectedUserId={setAdminSelectedUserId}
             />
           )}
-        </AnimatePresence>
+        </div>
       </main>
 
       <AnimatePresence>
