@@ -393,7 +393,7 @@ export const ageTimelineData = [
     month: 24,
     category: '영양·식사',
     title: '가족 식사 적응',
-    image: '/images/baby/toddler_running.png',
+    image: '/images/baby/baby_eating_weaning.png',
     summary: '가족과 비슷한 음식을 먹으며 올바른 식사 예절을 배웁니다.',
     points: ['스스로 숟가락/포크 사용', '정해진 자리에서 식사', '편식 예방 교육', '식사 시간의 즐거움 느끼기']
   },
@@ -452,7 +452,7 @@ export const ageTimelineData = [
     month: 36,
     category: '영양·식사',
     title: '올바른 식습관의 정착',
-    image: '/images/baby/toddler_running.png',
+    image: '/images/baby/baby_eating_weaning.png',
     summary: '균형 잡힌 영양 섭취와 건강한 식습관이 완성되는 시기입니다.',
     points: ['골고루 먹는 습관', '과도한 단 음식 제한', '식사 전 손 씻기 습관', '가족과 함께하는 대화형 식사']
   },
