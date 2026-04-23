@@ -1,7 +1,7 @@
 // src/components/Tabs/ConsultTab.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, User, ShieldCheck, Heart, Sparkles, X, LogOut, Trash2 } from 'lucide-react';
+import { MessageCircle, Send, User, ShieldCheck, Heart, Sparkles, X, LogOut, Trash2, Check } from 'lucide-react';
 import { cn } from '../../utils/uiUtils';
 
 const ConsultTab = ({
@@ -34,6 +34,7 @@ const ConsultTab = ({
 }) => {
   const chatEndRef = React.useRef(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = React.useState(false);
 
   // Auto-fill from childInfo on mount
   React.useEffect(() => {
@@ -144,12 +145,28 @@ const ConsultTab = ({
             />
           </div>
 
+          <div className="bg-brand-gray-50/50 dark:bg-apple-elevated/50 p-4 rounded-2xl border border-brand-gray-100 dark:border-apple-border shadow-sm mt-4">
+            <h5 className="text-[11px] font-black text-brand-gray-700 dark:text-brand-gray-200 mb-2 flex items-center gap-1"><ShieldCheck size={14} className="text-brand-primary"/> 개인정보 수집 및 이용 안내</h5>
+            <ul className="text-[10px] text-brand-gray-500 dark:text-brand-gray-400 space-y-1 mb-4 font-bold leading-relaxed">
+              <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">수집 항목:</span> 아이 별칭, 개월수, 성별, 상담 내용</li>
+              <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">수집 목적:</span> 맞춤형 양육/건강 상담 제공</li>
+              <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">보관 기간:</span> 상담 종료 및 기록 삭제 시 즉시 파기</li>
+            </ul>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className={cn("w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 mt-0.5", privacyAgreed ? "bg-brand-primary border-brand-primary text-white" : "border-brand-gray-300 dark:border-brand-gray-600 bg-white dark:bg-apple-card group-hover:border-brand-primary/50")}>
+                {privacyAgreed && <Check size={14} strokeWidth={4} />}
+              </div>
+              <span className="text-[12px] font-bold text-brand-gray-700 dark:text-brand-gray-200 select-none">개인정보 수집 및 이용에 동의합니다 <span className="text-brand-primary">(필수)</span></span>
+              <input type="checkbox" className="sr-only" checked={privacyAgreed} onChange={(e) => setPrivacyAgreed(e.target.checked)} />
+            </label>
+          </div>
+
           <button 
             type="submit" 
-            disabled={isSubmitting}
+            disabled={isSubmitting || !privacyAgreed}
             className={cn(
               "w-full py-5 bg-brand-primary text-white rounded-2xl font-bold text-lg shadow-lg shadow-brand-primary/20 hover:brightness-110 active:scale-[0.98] transition-all mt-2 flex items-center justify-center gap-2",
-              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              (isSubmitting || !privacyAgreed) ? "opacity-50 cursor-not-allowed" : ""
             )}
           >
             {isSubmitting ? (
