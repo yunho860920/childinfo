@@ -19,9 +19,8 @@ import {
 import { cn } from '../../utils/uiUtils';
 import { ageTimelineData } from '../../data/practicalInfo';
 
-const PracticalTab = ({ childInfo }) => {
+const PracticalTab = ({ childInfo, selectedTimelineMonth, setSelectedTimelineMonth }) => {
   const [selectedCategory, setSelectedCategory] = React.useState('전체');
-  const [selectedTimelineMonth, setSelectedTimelineMonth] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   
   const categories = [

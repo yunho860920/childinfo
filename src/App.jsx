@@ -100,7 +100,22 @@ function App() {
     setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3000);
   };
 
-  const [selectedHealthCategory, setSelectedHealthCategory] = React.useState('예방접종 일정');
+  const getHealthCategoryForMonths = (months) => {
+    if (months <= 1) return '신생아기 (0~1개월)';
+    if (months <= 12) return '영아기 (1~12개월)';
+    if (months <= 36) return '유아기 (1~3세)';
+    if (months <= 72) return '학령전기 (3~6세)';
+    return '학령기 (만 7세)';
+  };
+
+  const getTimelineMonthForMonths = (months) => {
+    const available = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
+    const past = available.filter(m => m <= months);
+    return past.length > 0 ? past[past.length - 1] : 36;
+  };
+
+  const [selectedHealthCategory, setSelectedHealthCategory] = React.useState(() => getHealthCategoryForMonths(childInfo.months));
+  const [selectedTimelineMonth, setSelectedTimelineMonth] = React.useState(() => getTimelineMonthForMonths(childInfo.months));
   const [completedVaccines, setCompletedVaccines] = React.useState(() => {
     try {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_vaccines') : null;
@@ -311,6 +326,8 @@ function App() {
   const handleBirthDateChange = (date) => {
     const months = calculateMonths(date);
     setChildInfo(prev => ({ ...prev, birthDate: date, months }));
+    setSelectedHealthCategory(getHealthCategoryForMonths(months));
+    setSelectedTimelineMonth(getTimelineMonthForMonths(months));
   };
 
   const handleAddGrowthRecord = (rec) => {
@@ -610,7 +627,12 @@ function App() {
 
         <div className="relative">
           {activeTab === 'practical' && (
-            <PracticalTab key="practical" childInfo={childInfo} />
+            <PracticalTab 
+              key="practical" 
+              childInfo={childInfo} 
+              selectedTimelineMonth={selectedTimelineMonth} 
+              setSelectedTimelineMonth={setSelectedTimelineMonth} 
+            />
           )}
           {activeTab === 'welfare' && (
             <WelfareTab key="welfare" childInfo={childInfo} welfareItems={welfareItems} selectedWelfareStage={selectedWelfareStage} setSelectedWelfareStage={setSelectedWelfareStage} isLoadingWelfare={isLoadingWelfare} welfareRegion={welfareRegion} setWelfareRegion={setWelfareRegion} welfareSubRegion={welfareSubRegion} setWelfareSubRegion={setWelfareSubRegion} expandedWelfareId={expandedWelfareId} setExpandedWelfareId={setExpandedWelfareId} isLocatingWelfare={isLocatingWelfare} setIsLocatingWelfare={setIsLocatingWelfare} welfareLocationMsg={welfareLocationMsg} setWelfareLocationMsg={setWelfareLocationMsg} />
