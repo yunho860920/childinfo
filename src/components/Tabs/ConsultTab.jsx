@@ -150,7 +150,7 @@ const ConsultTab = ({
             <ul className="text-[10px] text-brand-gray-500 dark:text-brand-gray-400 space-y-1 mb-4 font-bold leading-relaxed">
               <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">수집 항목:</span> 아이 별칭, 개월수, 성별, 상담 내용</li>
               <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">수집 목적:</span> 맞춤형 양육/건강 상담 제공</li>
-              <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">보관 기간:</span> 상담 종료 및 기록 삭제 시 즉시 파기</li>
+              <li>• <span className="text-brand-gray-700 dark:text-brand-gray-300">보관 기간:</span> 상담 기록 삭제 시 즉시 파기 (최대 14일 보관 후 자동 파기)</li>
             </ul>
             <label className="flex items-center gap-2 cursor-pointer group">
               <div className={cn("w-5 h-5 rounded border flex items-center justify-center transition-all shrink-0 mt-0.5", privacyAgreed ? "bg-brand-primary border-brand-primary text-white" : "border-brand-gray-300 dark:border-brand-gray-600 bg-white dark:bg-apple-card group-hover:border-brand-primary/50")}>
