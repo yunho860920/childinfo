@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X,
   Moon,
-  Settings,
   BookOpen,
   ShieldCheck,
   Layers,
@@ -36,6 +35,7 @@ import { fetchChildFacilities, getFilteredFacilities } from './services/facility
 import { loadSecureData, saveSecureData } from './utils/security';
 import { hashPin, calculateMonths, calculatePercentile } from './utils/growthUtils';
 import { FACILITIES_PER_PAGE, ALL_REGIONS } from './constants/uiConstants';
+import { normalizeDong } from './utils/regionUtils';
 
 
 function App() {
@@ -202,6 +202,22 @@ function App() {
       }
     } catch (e) {}
   }, [darkMode]);
+
+  // ── Supabase 익명 인증 (보안 강화) ────────────────────────────────────────
+  React.useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const user = await consultationService.signInAnonymously();
+        if (user) {
+          setUserId(user.id);
+          localStorage.setItem('childinfo_user_id', user.id);
+        }
+      } catch (e) {
+        console.error("SHIELD Agent: Auth initialization failed:", e);
+      }
+    };
+    initAuth();
+  }, []);
 
   // ── 상담 데이터 로드 및 실시간 구독 ──────────────────────────────────────
   React.useEffect(() => {
@@ -387,10 +403,11 @@ function App() {
             break;
           }
         }
+        const normalizedNeighborhood = normalizeDong(neighborhood);
         setSelectedRegion(foundRegion);
         setSelectedSubRegion(district || '전체');
-        setSelectedDong(neighborhood);
-        setLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${district} ${neighborhood}) 주변 시설을 찾았습니다.` });
+        setSelectedDong(normalizedNeighborhood);
+        setLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${district} ${normalizedNeighborhood}) 주변 시설을 찾았습니다.` });
       } catch (err) {
         setLocationMsg({ type: 'error', text: '위치 정보를 분석할 수 없습니다.' });
       } finally {
@@ -568,9 +585,6 @@ function App() {
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
-            <button className="p-2 text-brand-gray-500 hover:bg-brand-gray-100 dark:hover:bg-apple-elevated rounded-full transition-colors">
-              <Settings size={22} />
-            </button>
           </div>
         </div>
       </header>

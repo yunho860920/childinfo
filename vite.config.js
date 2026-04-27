@@ -16,6 +16,11 @@ export default defineConfig({
         target: 'https://api.odcloud.kr',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-bokji/, '')
+      },
+      '/api-nursing': {
+        target: 'https://sooyusil.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-nursing/, '')
       }
     }
   }

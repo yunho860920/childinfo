@@ -9,7 +9,8 @@ import {
   Users, 
   HeartHandshake, 
   Sparkles,
-  Phone
+  Phone,
+  Milk
 } from 'lucide-react';
 import { cn } from '../../utils/uiUtils';
 import { ALL_REGIONS, FACILITIES_PER_PAGE, FACILITY_CATEGORIES } from '../../constants/uiConstants';
@@ -52,6 +53,7 @@ const FacilitiesTab = ({
       case '병원·상담': return <HeartPulse size={16} />;
       case '가족센터': return <Users size={16} />;
       case '돌봄·지원센터': return <HeartHandshake size={16} />;
+      case '유아휴게소': return <Milk size={16} />;
       default: return <MapPin size={16} />;
     }
   };
@@ -62,6 +64,7 @@ const FacilitiesTab = ({
       case '병원·상담': return 'text-rose-500 bg-rose-50 dark:bg-rose-500/10 border-rose-100 dark:border-rose-500/20';
       case '가족센터': return 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-500/20';
       case '돌봄·지원센터': return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20';
+      case '유아휴게소': return 'text-cyan-500 bg-cyan-50 dark:bg-cyan-500/10 border-cyan-100 dark:border-cyan-500/20';
       default: return 'text-brand-gray-500 bg-brand-gray-50 dark:bg-white/5 border-brand-gray-100 dark:border-white/10';
     }
   };

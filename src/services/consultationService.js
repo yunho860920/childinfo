@@ -184,6 +184,25 @@ export const consultationService = {
     }
   },
 
+  // --- Auth Methods ---
+  async signInAnonymously() {
+    if (!isSupabaseReady()) return null;
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      return data.user;
+    } catch (e) {
+      console.error('SHIELD Agent: Anonymous Sign-in failed:', e);
+      return null;
+    }
+  },
+
+  async getCurrentUser() {
+    if (!isSupabaseReady()) return null;
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  },
+
   // Aliases for compatibility with App.jsx
   fetchUserConsultations: function(userId) { return this.getMessages(userId); },
   fetchAllConsultations: function() { return this.getAllConsultations(); },

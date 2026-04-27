@@ -17,6 +17,9 @@ import { gyeongbukInfra } from '../data/infrastructure/gyeongbuk/index';
 import { gyeongnamInfra } from '../data/infrastructure/gyeongnam/index';
 import { jejuInfra } from '../data/infrastructure/jeju/index';
 import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
+import { nursingRoomsInfra } from '../data/infrastructure/nursing_rooms';
+import { fetchNursingRoomsFromApi } from './nursingRoomService';
+import { parseAggressiveRegion } from '../utils/regionUtils';
 
 // System Database: High-density verified data
 const SYSTEM_DATABASE = [
@@ -37,7 +40,8 @@ const SYSTEM_DATABASE = [
   ...gyeongbukInfra,
   ...gyeongnamInfra,
   ...jejuInfra,
-  ...hospitalsInfra
+  ...hospitalsInfra,
+  ...nursingRoomsInfra
 ];
 
 const SIGGUNGU_DICT = {
@@ -63,6 +67,7 @@ const SIGGUNGU_DICT = {
 
 export async function fetchChildFacilities() {
   const apiKey = import.meta.env.VITE_BW_API_KEY;
+  const nursingApiKey = import.meta.env.VITE_NURSING_API_KEY;
   let apiFacilities = [];
 
   if (apiKey) {
@@ -109,13 +114,22 @@ export async function fetchChildFacilities() {
     } catch (e) { console.error(e); }
   }
 
+  // --- NEW: Fetch Nursing Rooms via separate API ---
+  let apiNursingRooms = [];
+  try {
+    // Attempt to use the same API key if applicable, or the service handles its own logic
+    apiNursingRooms = await fetchNursingRoomsFromApi(nursingApiKey);
+  } catch (e) {
+    console.error("Nursing Room API Fetch Failed:", e);
+  }
+
   // Normalize System Database types to match UI categories
   const normalizedSystem = SYSTEM_DATABASE.map(fac => ({
     ...fac,
     type: mapFacilityType(fac.type || '', fac.name)
   }));
 
-  const allData = [...normalizedSystem, ...apiFacilities];
+  const allData = [...normalizedSystem, ...apiFacilities, ...apiNursingRooms];
   const seenNames = new Set();
   return allData.filter(fac => {
     const uniqueKey = `${fac.name}-${fac.region}-${fac.subRegion}`;
@@ -131,13 +145,15 @@ const CAT_HOSPITAL = '병원·상담';
 const CAT_FAMILY = '가족센터';
 const CAT_DAYCARE = '어린이집';
 const CAT_PLAY = '놀이·체험';
+const CAT_NURSING = '유아휴게소';
 
 const CATEGORY_KEYWORDS = {
   [CAT_DAYCARE]: ['어린이집', '보육', '유치원', '집'],
   [CAT_FAMILY]: ['가족센터', '건강가정', '다문화', '가족'],
   [CAT_HOSPITAL]: ['병원', '의원', '상담', '발달', '소아과', '정신', '치료', '심리', '허그맘'],
   [CAT_PLAY]: ['키즈카페', '놀이터', '박물관', '체험', '과학관', '도서관', '장난감', '미술관', '생태', '숲체험', '문화센터', '상상나라', '아트홀', '극단', '체육', '공원'],
-  [CAT_CARE]: ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무', '돌봄', '방과후']
+  [CAT_CARE]: ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무', '돌봄', '방과후'],
+  [CAT_NURSING]: ['유아휴게소', '수유실', '휴게실']
 };
 
 function normalizeCategory(typeStr, nameStr) {
@@ -147,9 +163,12 @@ function normalizeCategory(typeStr, nameStr) {
   if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return CAT_FAMILY;
   if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신') || t.includes('심리')) return CAT_HOSPITAL;
   
-  // New: Play/Experience detection
   for (const k of CATEGORY_KEYWORDS[CAT_PLAY]) {
     if (t.includes(k)) return CAT_PLAY;
+  }
+
+  for (const k of CATEGORY_KEYWORDS[CAT_NURSING]) {
+    if (t.includes(k)) return CAT_NURSING;
   }
 
   for (const k of CATEGORY_KEYWORDS[CAT_CARE]) {
@@ -170,8 +189,9 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
     // 2. Geographic Filtering (Region/SubRegion)
     const matchRegion = region === '전체' || f.region === region;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
-    // Fix: If a specific dong is selected, show facilities belonging to that dong OR district-wide '전체' facilities.
-    const matchDong = !dong || dong === '전체' || f.dong === dong || f.dong === '전체';
+    // Fix: If a specific dong is selected, show facilities belonging to that dong.
+    // If a facility has '전체' dong, it only matches if the filter is '전체' OR if the name/address contains the dong.
+    const matchDong = !dong || dong === '전체' || f.dong === dong || (f.dong === '전체' && (f.name.includes(dong) || f.address.includes(dong)));
     
     // 3. Search Query (Name/Address/Category)
     const lowerQuery = (query || "").toLowerCase();
@@ -187,46 +207,5 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
 function mapFacilityType(rawType, name) {
   return normalizeCategory(rawType, name);
 }
+// Local helper moved to regionUtils.js
 
-function parseAggressiveRegion(addrStr, facName) {
-  const parts = (addrStr || "").split(" ").filter(p => p.trim());
-  let region = '기타';
-  let subRegion = '전체';
-  let dong = '전체';
-
-  if (parts.length > 0) {
-    const first = parts[0];
-    for (const r in SIGGUNGU_DICT) {
-      if (first.includes(r)) {
-        region = r;
-        break;
-      }
-    }
-    
-    // Improved sub-region extraction (Seoul 25-districts focus)
-    if (parts.length >= 2) {
-      const second = parts[1];
-      if (second.endsWith('구') || second.endsWith('시') || second.endsWith('군')) {
-        subRegion = second;
-      } else if (parts[2] && (parts[2].endsWith('구') || parts[2].endsWith('시'))) {
-        subRegion = parts[2];
-      } else {
-        subRegion = second;
-      }
-    }
-    
-    if (parts.length >= 3) {
-      const third = parts[2];
-      if (third.endsWith('동') || third.endsWith('읍') || third.endsWith('면')) {
-        dong = third;
-      }
-    }
-  }
-
-  if (region === '기타') {
-    if (facName.includes('서울')) region = '서울';
-    else if (facName.includes('경기')) region = '경기';
-    else if (facName.includes('부산')) region = '부산';
-  }
-  return { region, subRegion, dong };
-}

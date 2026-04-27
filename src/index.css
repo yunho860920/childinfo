@@ -9,9 +9,10 @@
     --brand-accent: #FFB86C;
     --brand-gray-900: #191F28;
     
-    /* Toss Light Tokens */
+    /* Light Tokens */
     --apple-bg: #F2F4F6;
     --apple-card: #FFFFFF;
+    --apple-elevated: #F2F4F6;
     --apple-border: #E5E8EB;
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.02);
     --shadow-premium: 0 8px 24px rgba(0, 0, 0, 0.04);
@@ -19,9 +20,9 @@
 
   .dark {
     --apple-bg: #000000;
-    --apple-card: #17171C;
-    --apple-elevated: #1F1F24;
-    --apple-border: #2C2C34;
+    --apple-card: #1C1C1E;
+    --apple-elevated: #2C2C2E;
+    --apple-border: #38383A;
     --brand-gray-900: #F9FAFB;
     --shadow-soft: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
     --shadow-premium: 0 20px 50px -12px rgba(0, 0, 0, 0.7);
@@ -46,10 +47,22 @@
   ::-webkit-scrollbar-thumb {
     @apply bg-brand-gray-200 border-transparent bg-clip-padding rounded-full hover:bg-brand-gray-300 transition-colors;
   }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Dark mode select/option fix */
+  .dark select option {
+    background-color: var(--apple-card);
+    color: #F9FAFB;
+  }
 }
 
 @layer components {
-  /* Toss Style Cards */
+  /* Cards */
   .card-container {
     @apply relative overflow-hidden bg-[var(--apple-card)] border border-[var(--apple-border)] rounded-3xl transition-all duration-300 ease-out;
     box-shadow: var(--shadow-soft);
@@ -62,9 +75,15 @@
   .glass {
     @apply bg-white/80 backdrop-blur-xl border border-white/20;
   }
+  .dark .glass {
+    @apply bg-white/5 border-white/10;
+  }
 
   .glass-pill {
     @apply bg-white/90 backdrop-blur-md shadow-card border border-brand-gray-100 rounded-full;
+  }
+  .dark .glass-pill {
+    @apply bg-white/10 border-white/10;
   }
 
   /* Chat Bubbles */
@@ -80,6 +99,15 @@
   .chat-bubble-system {
     @apply bg-brand-gray-100 text-brand-gray-500 rounded-xl text-center text-[11px] font-bold mx-auto py-1.5 px-4;
   }
+  .dark .chat-bubble-system {
+    @apply bg-white/5 text-brand-gray-400;
+  }
+
+  /* Fever level cards dark mode fix */
+  .dark .fever-green { @apply bg-green-500/10 text-green-400; }
+  .dark .fever-yellow { @apply bg-yellow-500/10 text-yellow-400; }
+  .dark .fever-orange { @apply bg-orange-500/10 text-orange-400; }
+  .dark .fever-red { @apply bg-red-500/10 text-red-400; }
 }
 
 /* Animations */
@@ -87,3 +115,28 @@
   @apply opacity-40 grayscale transition-all duration-500;
 }
 
+/* ─── Dark Mode Utility Overrides ─────────────────────────────────── */
+/* Tailwind 3 cannot resolve CSS vars in color definitions with opacity. */
+/* So we override the generated dark: utilities with the correct CSS variables. */
+.dark .dark\:bg-apple-card { background-color: var(--apple-card) !important; }
+.dark .dark\:bg-apple-elevated { background-color: var(--apple-elevated) !important; }
+.dark .dark\:border-apple-card { border-color: var(--apple-card) !important; }
+.dark .dark\:border-apple-border { border-color: var(--apple-border) !important; }
+.dark .dark\:border-apple-black { border-color: #000000 !important; }
+.dark .dark\:bg-apple-black { background-color: #000000 !important; }
+
+/* bg-white override for card-container and other elements using CSS vars */
+.dark .card-container {
+  background-color: var(--apple-card);
+  border-color: var(--apple-border);
+}
+
+/* Fix bg-white that's used alongside dark:bg-apple-card */
+.dark .dark\:bg-apple-card\/80 { background-color: rgba(28, 28, 30, 0.8) !important; }
+.dark .dark\:bg-apple-card\/90 { background-color: rgba(28, 28, 30, 0.9) !important; }
+.dark .dark\:bg-apple-elevated\/80 { background-color: rgba(44, 44, 46, 0.8) !important; }
+.dark .dark\:bg-apple-elevated\/50 { background-color: rgba(44, 44, 46, 0.5) !important; }
+.dark .dark\:border-apple-border\/50 { border-color: rgba(56, 56, 58, 0.5) !important; }
+
+/* Navbar override */
+.dark nav.dark\:bg-apple-card\/90 { background-color: rgba(28, 28, 30, 0.9) !important; }

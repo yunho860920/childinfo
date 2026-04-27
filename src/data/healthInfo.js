@@ -117,51 +117,6 @@ export const growthMilestones = [
       { id: 'm24_sentence', name: '두 단어 문장', desc: '우유 줘, 이거 뭐야 같은 문장을 말하나요?', type: 'Language' },
       { id: 'm24_parallel', name: '병행 놀이', desc: '다른 아이들 곁에서 각자 노나요?', type: 'Social' }
     ]
-  },
-  {
-    months: 36,
-    label: '만 3세 (36개월)',
-    items: [
-      { id: 'm36_jump', name: '두 발 모아 뛰기', desc: '제자리에서 두 발을 동시에 떼고 뛰나요?', type: 'Physical' },
-      { id: 'm36_name', name: '이름 말하기', desc: '자신의 이름과 성별을 말할 수 있나요?', type: 'Language' },
-      { id: 'm36_circle', name: '원 그리기', desc: '동그라미 모양을 흉내 내어 그리나요?', type: 'Cognitive' }
-    ]
-  },
-  {
-    months: 48,
-    label: '만 4세 (48개월)',
-    items: [
-      { id: 'm48_hop', name: '한 발로 뛰기', desc: '한 발로 서서 균형을 잡거나 뛸 수 있나요?', type: 'Physical' },
-      { id: 'm48_story', name: '이야기 하기', desc: '최근 있었던 일을 문장으로 이야기하나요?', type: 'Language' },
-      { id: 'm48_play', name: '협동 놀이', desc: '다른 아이들과 규칙을 지키며 함께 노나요?', type: 'Social' }
-    ]
-  },
-  {
-    months: 60,
-    label: '만 5세 (60개월)',
-    items: [
-      { id: 'm60_draw', name: '사람 그리기', desc: '신체 부위가 6개 이상 포함된 사람을 그리나요?', type: 'Cognitive' },
-      { id: 'm60_future', name: '미래 시제 사용', desc: '내일 무엇을 할 것인지 말할 수 있나요?', type: 'Language' },
-      { id: 'm60_dress', name: '스스로 옷 입기', desc: '도움 없이 혼자서 옷을 입고 벗나요?', type: 'Physical' }
-    ]
-  },
-  {
-    months: 72,
-    label: '만 6세 (72개월)',
-    items: [
-      { id: 'm72_bike', name: '두발 자전거 타기', desc: '보조바퀴 없이 자전거를 타거나 균형을 잡나요?', type: 'Physical' },
-      { id: 'm72_read', name: '간단한 글 읽기', desc: '익숙한 단어나 짧은 문장을 읽을 수 있나요?', type: 'Cognitive' },
-      { id: 'm72_rule', name: '규칙 이해', desc: '게임의 규칙을 이해하고 순서를 기다리나요?', type: 'Social' }
-    ]
-  },
-  {
-    months: 84,
-    label: '만 7세 (84개월)',
-    items: [
-      { id: 'm84_sport', name: '스포츠 참여', desc: '축구, 수영 등 규칙이 있는 스포츠를 즐기나요?', type: 'Physical' },
-      { id: 'm84_math', name: '기초 연산', desc: '간단한 한 자리 수 덧셈과 뺄셈을 하나요?', type: 'Cognitive' },
-      { id: 'm84_friend', name: '단짝 친구', desc: '특정 친구와 깊은 관계를 맺고 어울리나요?', type: 'Social' }
-    ]
   }
 ];
 
@@ -170,50 +125,54 @@ export const ageHealthData = [
     ageLabel: '신생아기 (0~1개월)',
     border: 'border-blue-500',
     conditions: [
-      { name: '신생아 황달', desc: '피부나 눈의 흰자가 노랗게 변하면 즉시 소아과를 방문하세요.', needsDoctor: true, doctorNote: '광선 치료가 필요할 수 있습니다.' },
-      { name: '영아 산통', desc: '이유 없이 계속 우는 경우, 배에 가스가 찼는지 확인하세요. 부드럽게 배를 마사지해 주는 것이 도움이 됩니다.', needsDoctor: false },
-      { name: '제대 탈락 및 배꼽 관리', desc: '기저귀가 배꼽을 덮지 않도록 접어주시고, 붉어지거나 진물이 나면 진료를 받으세요.', needsDoctor: false },
-      { name: '수유 및 체중 감소', desc: '생후 첫 주에는 생리적 체중 감소가 있으나, 이후 체중이 잘 늘고 있는지 모니터링하세요.', needsDoctor: false }
+      { name: '영아돌연사증후군(SIDS) 예방', desc: '아이는 반드시 똑바로 눕혀 재우고, 침구는 딱딱하게 유지하며 주변에 인형이나 두꺼운 이불을 두지 마세요.', needsDoctor: false, emergency: true },
+      { name: '신생아 황달', desc: '피부나 눈의 흰자가 노랗게 변하면 즉시 방문하세요. 특히 손발바닥까지 노랗다면 시급합니다.', needsDoctor: true, doctorNote: '광선 치료가 필요할 수 있습니다.' },
+      { name: '제대 탈락 및 배꼽 관리', desc: '배꼽이 떨어지기 전후로 진물이 나거나 냄새가 나고 주변이 붉어지면 진료를 받으세요.', needsDoctor: true },
+      { name: '영아 산통', desc: '이유 없이 자지러지게 우는 경우, 배를 따뜻하게 하고 \'하늘 자전거\' 운동으로 가스 배출을 도와주세요.', needsDoctor: false }
     ]
   },
   {
     ageLabel: '영아기 (1~12개월)',
     border: 'border-emerald-500',
     conditions: [
-      { name: '이유식 시작 및 알레르기', desc: '생후 4~6개월부터 이유식을 시작하며, 새로운 음식 추가 시 알레르기 반응을 3일간 관찰하세요.', needsDoctor: false },
-      { name: '영아 연축', desc: '깜짝 놀라는 듯한 동작을 연달아 반복하는 발작 증상이 보이면 즉시 응급실로 가세요.', needsDoctor: true, doctorNote: '응급 뇌파 검사 및 전문의 진료가 시급합니다.' },
-      { name: '치아 맹출', desc: '아랫니 두 개가 올라오기 시작합니다. 실리콘 칫솔이나 거즈로 잇몸을 부드럽게 닦아주세요.', needsDoctor: false },
-      { name: '분리 불안', desc: '양육자와 떨어질 때 심하게 울 수 있습니다. 까꿍놀이 등을 통해 꾸준한 애정 표현이 중요합니다.', needsDoctor: false }
+      { name: '장중첩증 (응급)', desc: '심한 복통으로 자지러지게 울다가 멈추기를 반복하고, 딸기잼 같은 혈변을 보면 즉시 응급실로 가세요.', needsDoctor: true, doctorNote: '발병 24시간 내 공기 정복술이 필요합니다.', emergency: true },
+      { name: '기도폐쇄 및 이물질 흡입', desc: '갑자기 숨을 못 쉬거나 얼굴이 파래지면 즉시 119를 부르고 등 두드리기와 가슴 압박(영아 하임리히법)을 시행하세요.', needsDoctor: true, emergency: true },
+      { name: '모세기관지염 및 폐렴', desc: '숨을 쉴 때 쌕쌕거리는 소리가 나거나 콧구멍을 벌렁거리며 힘들게 숨을 쉬면 즉시 진료가 필요합니다.', needsDoctor: true },
+      { name: '돌발진 (장미진)', desc: '3~5일간 고열이 지속되다가 열이 내리면서 온몸에 장밋빛 발진이 돋는 것이 특징입니다.', needsDoctor: true, doctorNote: '충분한 수분 공급과 해열제 복용이 중요합니다.' }
     ]
   },
   {
     ageLabel: '유아기 (1~3세)',
     border: 'border-orange-500',
     conditions: [
-      { name: '철분 결핍성 빈혈', desc: '아이가 지나치게 창백하고 밥을 잘 먹지 않으며 보채는 경우 빈혈을 의심해 보세요.', needsDoctor: true, doctorNote: '혈액검사 확인 후 철분제 복용이 필요할 수 있습니다.' },
-      { name: '열성 경련', desc: '고열 시 경련을 일으킬 수 있습니다. 고개를 돌려 기도를 확보하고 시간을 재며 즉시 병원으로 가세요.', needsDoctor: true, doctorNote: '첫 발생 시 뇌수막염 등 감별을 위해 진료 필수입니다.' },
-      { name: '식사 거부 및 편식', desc: '독립심이 생기며 편식이 생길 수 있습니다. 억지로 먹이지 말고 식사 시간을 즐겁게 만들어주세요.', needsDoctor: false },
-      { name: '대소변 가리기', desc: '변기에 관심을 보이면 강압적이지 않게 배변 훈련을 시작하세요.', needsDoctor: false }
+      { name: '열경련(열성 경련) 대처', desc: '주변의 위험한 물건을 치우고 고개를 옆으로 돌려 기도를 확보하세요. 절대 입에 손가락이나 수건을 넣지 마세요.', needsDoctor: true, doctorNote: '5분 이상 지속되거나 몸 한쪽만 경련하면 119를 호출하세요.', emergency: true },
+      { name: '장염 및 급성 탈수', desc: '심한 설사와 구토로 소변량이 줄고 눈이 쑥 들어가며 처지는 경우 탈수 증상이니 수액 치료가 시급합니다.', needsDoctor: true, emergency: true },
+      { name: '낙상 및 두부손상', desc: '추락 후 구토를 하거나, 의식이 흐릿하고 자꾸 자려고 하며 동공 크기가 다르면 즉시 응급실로 이동하세요.', needsDoctor: true, emergency: true },
+      { name: '화상 응급처치', desc: '흐르는 찬물에 15~20분간 열을 식히세요. 물집은 절대 터뜨리지 말고 깨끗한 거즈로 감싸 병원을 방문하세요.', needsDoctor: true, emergency: true },
+      { name: '수족구병', desc: '입안의 수포로 먹지 못해 탈수가 오기 쉽습니다. 부드럽고 시원한 음식 위주로 섭취하게 하세요.', needsDoctor: true }
     ]
   },
   {
     ageLabel: '학령전기 (3~6세)',
     border: 'border-purple-500',
     conditions: [
-      { name: '시력 및 청력 발달', desc: 'TV를 너무 가까이서 보거나 불러도 대답이 없는 경우 시력/청력 검사를 받아보세요.', needsDoctor: true, doctorNote: '사시, 약시 조기 발견을 위해 영유아 검진이 필수입니다.' },
-      { name: '아데노이드 비대증', desc: '코골이가 심하거나 입을 벌리고 자는 경우, 잦은 중이염이 발생하면 확인이 필요합니다.', needsDoctor: true, doctorNote: '수면 다원 검사 및 이비인후과 진료를 권장합니다.' },
-      { name: '언어 발달 지연', desc: '또래보다 언어 표현이 현저히 늦고 의사소통에 어려움이 있을 경우 발달 평가를 받아보세요.', needsDoctor: true, doctorNote: '조기 개입 및 언어 치료가 필요할 수 있습니다.' },
-      { name: '사회성 및 감정 조절', desc: '친구들과 잘 어울리는지, 감정을 말로 표현하는지 관찰하고 공감해 주세요.', needsDoctor: false }
+      { name: '뇌수막염 의심 징후', desc: '고열과 함께 심한 두통, 구토, 목이 뻣뻣해져서 고개를 숙이지 못하는 증상이 있으면 즉시 진료받으세요.', needsDoctor: true, emergency: true },
+      { name: '크룹 (급성 후두염)', desc: '밤에 갑자기 \'컹컹\'거리는 개 짖는 듯한 기침을 하고 숨쉬기 힘들어하면 시원한 공기를 마시게 하며 응급실로 가세요.', needsDoctor: true, emergency: true },
+      { name: '아낙필락시스 (알레르기 쇼크)', desc: '특정 음식/약물 섭취 후 두드러기, 호흡곤란, 혈압 저하가 오면 즉시 119를 부르고 에피네프린을 사용해야 합니다.', needsDoctor: true, emergency: true },
+      { name: '중이염', desc: '감기 후 귀 통증을 호소하거나 귀를 자꾸 만지며 보채면 확인이 필요합니다. 청력 저하의 원인이 될 수 있습니다.', needsDoctor: true },
+      { name: '농가진 및 소아 변비', desc: '전염성이 강한 농가진은 항생제 연고가 필요하며, 변비는 충분한 식이섬유와 수분 섭취, 배변 습관 교육이 중요합니다.', needsDoctor: true }
     ]
   },
   {
-    ageLabel: '학령기 (만 7세)',
+    ageLabel: '학령기 (만 7세~)',
     border: 'border-pink-500',
     conditions: [
-      { name: '시력 저하 및 틱 장애', desc: '학습량이 늘며 근시가 급증하거나, 스트레스로 인한 눈 깜빡임 등 틱 증상이 나타날 수 있습니다.', needsDoctor: true, doctorNote: '안과 검진 및 심리적 안정 환경 조성이 필요합니다.' },
-      { name: '주의력결핍 과다행동장애(ADHD)', desc: '학교 생활 중 산만함이나 충동성이 심해 학습에 지장이 있는 경우 확인이 필요합니다.', needsDoctor: true, doctorNote: '전문의의 정확한 진단 및 상담이 권장됩니다.' },
-      { name: '소아 비만 및 성조숙증', desc: '서구화된 식습관과 운동 부족으로 비만이 오기 쉬우며, 2차 성징이 너무 빨리 나타날 수 있습니다.', needsDoctor: true, doctorNote: '체중 관리 및 성장판/호르몬 검사가 필요할 수 있습니다.' },
-      { name: '영구치 맹출 및 충치 관리', desc: '유치가 빠지고 영구치가 나기 시작합니다. 올바른 양치 습관과 정기적인 치과 검진이 필수입니다.', needsDoctor: false }
+      { name: '주의력결핍 과다행동장애(ADHD)', desc: '산만함, 충동성, 집중력 저하가 일상 생활과 학습에 지장을 준다면 전문의의 상담과 체계적인 치료가 필요합니다.', needsDoctor: true },
+      { name: '성조숙증 징후 관찰', desc: '여아 만 8세 미만 가슴 발달, 남아 만 9세 미만 고환 크기 증가 등 2차 성징이 일찍 나타나면 검사가 필요합니다.', needsDoctor: true, doctorNote: '성장판 및 호르몬 검사를 권장합니다.' },
+      { name: '틱(Tic) 장애', desc: '눈 깜빡임, 코 킁킁거림 등 본인의 의지와 상관없는 동작이나 소리가 반복되면 꾸짖지 말고 정서적 안정을 도와주세요.', needsDoctor: true },
+      { name: '성장통', desc: '활동량이 많은 날 주로 밤에 다리 통증을 호소합니다. 따뜻한 찜질과 마사지가 도움이 되나, 낮에도 아프거나 부어오르면 진료받으세요.', needsDoctor: false },
+      { name: '치아우식증(충치) 및 각결막염', desc: '영구치가 나는 시기이므로 철저한 양치와 정기 검진이 필수이며, 유행성 눈병 시 전염 방지에 유의하세요.', needsDoctor: true },
+      { name: '약물/독소 중독 대처', desc: '위험 물질을 삼킨 경우 억지로 토하게 하지 말고 물질 용기를 챙겨 즉시 응급실로 이동하세요.', needsDoctor: true, emergency: true }
     ]
   }
 ];

@@ -295,19 +295,27 @@ const ConsultTab = ({
               <div className="flex items-center gap-2 shrink-0">
 
                 <button 
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    localStorage.removeItem('childinfo_user_name');
-                    localStorage.removeItem('childinfo_user_age');
-                    localStorage.removeItem('childinfo_user_gender');
-                    localStorage.removeItem('childinfo_user_category');
+                    if (!window.confirm('기존 상담 내역이 모두 삭제됩니다. 계속하시겠습니까?')) return;
                     
-                    // Generate new User ID for a fresh session
-                    const newId = 'user_' + Math.random().toString(36).substring(2, 11);
-                    localStorage.setItem('childinfo_user_id', newId);
-                    setUserId(newId);
-                    setIsProfileStored(false);
+                    try {
+                      // 1. Delete data from Supabase
+                      await onDeleteRoom(userId);
+                      
+                      // 2. Clear local storage metadata
+                      localStorage.removeItem('childinfo_user_name');
+                      localStorage.removeItem('childinfo_user_age');
+                      localStorage.removeItem('childinfo_user_gender');
+                      localStorage.removeItem('childinfo_user_category');
+                      
+                      // 3. Reset profile state to show the form again
+                      setIsProfileStored(false);
+                    } catch (err) {
+                      console.error('Failed to reset conversation:', err);
+                      alert('대화 초기화 중 오류가 발생했습니다.');
+                    }
                   }}
                   className="text-xs font-black text-white bg-brand-primary px-4 py-2.5 rounded-xl transition-all shadow-md shadow-brand-primary/20 hover:brightness-110 active:scale-95"
                 >

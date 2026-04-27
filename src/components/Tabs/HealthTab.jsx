@@ -14,7 +14,7 @@ const HealthTab = ({
   completedMilestones,
   toggleMilestone
 }) => {
-  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아기 (0~1개월)', '영아기 (1~12개월)', '유아기 (1~3세)', '학령전기 (3~6세)', '학령기 (만 7세)'];
+  const healthCategories = ['예방접종 일정', '성장 마일스톤', '체온·응급', '신생아기 (0~1개월)', '영아기 (1~12개월)', '유아기 (1~3세)', '학령전기 (3~6세)', '학령기 (만 7세~)'];
   const [vaxFilter, setVaxFilter] = React.useState('전체');
 
   const vaxAgeGroups = [
@@ -162,7 +162,7 @@ const HealthTab = ({
                  <div className="flex items-center justify-between px-2">
                    <h4 className="text-base font-black text-brand-gray-900 dark:text-white">{group.label}</h4>
                    {isOverdue && (
-                     <span className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tighter bg-brand-gray-100 px-2 py-0.5 rounded">Past Stage</span>
+                     <span className="text-[10px] font-black text-brand-gray-400 uppercase tracking-tighter bg-brand-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">Past Stage</span>
                    )}
                  </div>
                  <div className="grid gap-3">
@@ -170,20 +170,20 @@ const HealthTab = ({
                      const isChecked = !!completedMilestones[milestone.id];
                      const showCaution = !isChecked && childMonths > (group.months + 2);
                      return (
-                       <div key={milestone.id} onClick={() => toggleMilestone(milestone.id)} className={cn("p-5 rounded-[1.75rem] border cursor-pointer transition-all flex items-start gap-4 shadow-soft", isChecked ? "bg-emerald-50/30 border-emerald-200/50" : "bg-white dark:bg-apple-card border-brand-gray-100 dark:border-apple-border")}>
-                         <div className={cn("w-6 h-6 rounded-lg border flex items-center justify-center transition-all shrink-0 mt-1", isChecked ? "bg-emerald-500 border-emerald-500 text-white" : "border-brand-gray-200 bg-white")}>
+                        <div key={milestone.id} onClick={() => toggleMilestone(milestone.id)} className={cn("p-5 rounded-[1.75rem] border cursor-pointer transition-all flex items-start gap-4 shadow-soft", isChecked ? "bg-emerald-50/30 dark:bg-emerald-500/5 border-emerald-200/50 dark:border-emerald-500/20" : "bg-white dark:bg-apple-card border-brand-gray-100 dark:border-apple-border")}>
+                          <div className={cn("w-6 h-6 rounded-lg border flex items-center justify-center transition-all shrink-0 mt-1", isChecked ? "bg-emerald-500 border-emerald-500 text-white" : "border-brand-gray-200 dark:border-apple-border bg-white dark:bg-apple-card")}>
                            {isChecked && <Check size={16} strokeWidth={4} />}
                          </div>
                          <div className="flex-1 min-w-0">
                            <div className="flex items-center justify-between mb-1">
                              <div className="flex items-center gap-2">
                                <span className={cn("text-[15px] font-black", isChecked ? "text-emerald-700" : "text-brand-gray-900 dark:text-white")}>{milestone.name}</span>
-                               <span className="text-[9px] font-black text-brand-gray-400 bg-brand-gray-50 px-1.5 py-0.5 rounded whitespace-nowrap">{milestone.type}</span>
+                               <span className="text-[9px] font-black text-brand-gray-400 bg-brand-gray-50 dark:bg-white/10 px-1.5 py-0.5 rounded whitespace-nowrap">{milestone.type}</span>
                              </div>
                              {isChecked ? (
-                               <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full whitespace-nowrap">On Track</span>
+                               <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-full whitespace-nowrap">On Track</span>
                              ) : showCaution ? (
-                               <div className="flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 px-2 py-1 rounded-full whitespace-nowrap">
+                               <div className="flex items-center gap-1 text-[10px] font-black text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-2 py-1 rounded-full whitespace-nowrap">
                                  <ShieldAlert size={10} />
                                  체크 권장
                                </div>
@@ -228,10 +228,10 @@ const HealthTab = ({
                 <div className="space-y-2">
                   {(temperatureGuide?.feverLevels || []).map((f, i) => {
                     const colorMap = {
-                      green: 'bg-green-50 text-green-700',
-                      yellow: 'bg-yellow-50 text-yellow-700',
-                      orange: 'bg-orange-50 text-orange-700',
-                      red: 'bg-red-50 text-red-600',
+                      green: 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400',
+                      yellow: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400',
+                      orange: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400',
+                      red: 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
                     };
                     return (
                       <div key={i} className={cn('flex items-center gap-3 py-3 px-4 rounded-2xl', colorMap[f.color])}>
@@ -253,21 +253,31 @@ const HealthTab = ({
           {(ageHealthData || [])
             .filter(ageGroup => ageGroup.ageLabel === selectedHealthCategory)
             .flatMap(ageGroup => ageGroup.conditions.map((cond, i) => (
-              <div key={i} className={cn('bg-white dark:bg-apple-card p-6 border rounded-[2rem] shadow-soft group hover:border-brand-primary/30 transition-all cursor-default', ageGroup.border.replace('border-', 'border-opacity-40 border-'))}>
+              <div key={i} className={cn(
+                'bg-white dark:bg-apple-card p-6 border rounded-[2rem] shadow-soft group hover:border-brand-primary/30 transition-all cursor-default', 
+                cond.emergency 
+                  ? 'border-red-500 bg-red-50/30 dark:bg-red-500/5 ring-1 ring-red-500/20' 
+                  : ageGroup.border.replace('border-', 'border-opacity-40 border-')
+              )}>
                 <div className="flex gap-4">
                   <div className={cn(
                     'shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-lg',
-                    cond.needsDoctor ? 'bg-red-400 shadow-red-400/20' : 'bg-emerald-400 shadow-emerald-400/20'
+                    cond.emergency ? 'bg-red-600 shadow-red-600/30' : (cond.needsDoctor ? 'bg-red-400 shadow-red-400/20' : 'bg-emerald-400 shadow-emerald-400/20')
                   )}>
-                    {cond.needsDoctor ? '!' : '✓'}
+                    {cond.emergency ? '🚨' : (cond.needsDoctor ? '!' : '✓')}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-lg font-black text-brand-gray-900 dark:text-white mb-1">{cond.name}</h4>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="text-lg font-black text-brand-gray-900 dark:text-white">{cond.name}</h4>
+                      {cond.emergency && <span className="text-[10px] font-black text-white bg-red-600 px-2 py-0.5 rounded-full animate-pulse">EMERGENCY</span>}
+                    </div>
                     <p className="text-[13px] text-brand-gray-500 dark:text-brand-gray-400 font-medium leading-relaxed mb-4">{cond.desc}</p>
-                    {cond.needsDoctor && cond.doctorNote && (
-                      <div className="bg-red-50 dark:bg-red-500/10 rounded-2xl p-4 border border-red-100 dark:border-red-500/20">
-                        <p className="text-[10px] font-black text-red-500 mb-1 uppercase tracking-wider">주요 부모 조치</p>
-                        <p className="text-xs text-brand-gray-700 dark:text-brand-gray-200 font-bold leading-relaxed">{cond.doctorNote}</p>
+                    {(cond.needsDoctor || cond.emergency) && cond.doctorNote && (
+                      <div className={cn("rounded-2xl p-4 border", cond.emergency ? "bg-red-600/10 border-red-600/20" : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20")}>
+                        <p className={cn("text-[10px] font-black mb-1 uppercase tracking-wider", cond.emergency ? "text-red-600" : "text-red-500")}>
+                          {cond.emergency ? '즉시 응급 처치 및 대처' : '주요 부모 조치'}
+                        </p>
+                        <p className={cn("text-xs font-bold leading-relaxed", cond.emergency ? "text-red-700 dark:text-red-400" : "text-brand-gray-700 dark:text-brand-gray-200")}>{cond.doctorNote}</p>
                       </div>
                     )}
                   </div>
@@ -275,6 +285,7 @@ const HealthTab = ({
               </div>
             )))
           }
+
         </div>
       )}
 
