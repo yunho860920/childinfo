@@ -8,6 +8,7 @@ import {
   Layers,
   HeartPulse,
   MapPin,
+  Map as MapIcon,
   MessageCircle,
   Lock,
   Check,
@@ -23,6 +24,7 @@ import WelfareTab from './components/Tabs/WelfareTab';
 import HealthTab from './components/Tabs/HealthTab';
 import FacilitiesTab from './components/Tabs/FacilitiesTab';
 import ConsultTab from './components/Tabs/ConsultTab';
+import StampTourTab from './components/Tabs/StampTourTab';
 import MilestoneModal from './components/Modals/MilestoneModal';
 import GrowthChartModal from './components/GrowthChartModal';
 import TemperatureChartModal from './components/Dashboard/TemperatureChartModal';
@@ -648,6 +650,7 @@ function App() {
             { id: 'welfare', label: '복지', icon: <Layers size={22} /> },
             { id: 'health', label: '건강', icon: <HeartPulse size={22} /> },
             { id: 'facilities', label: '시설', icon: <MapPin size={22} /> },
+            { id: 'stamps', label: '가볼곳', icon: <MapIcon size={22} /> },
             { id: 'consult', label: '상담', icon: <MessageCircle size={22} /> },
           ].map((tab) => (
             <button
@@ -719,6 +722,9 @@ function App() {
               selectedFacilityCategory={selectedFacilityCategory}
               setSelectedFacilityCategory={setSelectedFacilityCategory}
             />
+          )}
+          {activeTab === 'stamps' && (
+            <StampTourTab key="stamps" />
           )}
           {activeTab === 'consult' && (
             <ConsultTab 
