@@ -8,3 +8,9 @@ dist/
 .DS_Store
 skills/
 .vercel/
+
+# Local experiment/build artifacts that should not affect app data.
+scratch-vsix/
+*.vsix
+*.zip
+.codexrc

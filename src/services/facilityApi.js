@@ -44,6 +44,29 @@ const SYSTEM_DATABASE = [
   ...nursingRoomsInfra
 ];
 
+const FACILITY_SNAPSHOT_KEY = 'childinfo_facilities_snapshot';
+const MIN_EXPECTED_FACILITIES = 100;
+
+function loadFacilitySnapshot() {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(FACILITY_SNAPSHOT_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length >= MIN_EXPECTED_FACILITIES ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveFacilitySnapshot(items) {
+  try {
+    if (typeof window === 'undefined' || !Array.isArray(items) || items.length < MIN_EXPECTED_FACILITIES) return;
+    window.localStorage.setItem(FACILITY_SNAPSHOT_KEY, JSON.stringify(items));
+  } catch (e) {
+    // localStorage may be unavailable in private/restricted browsing.
+  }
+}
+
 const SIGGUNGU_DICT = {
   '서울': ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'],
   // ... (Preserved internally)
@@ -131,12 +154,25 @@ export async function fetchChildFacilities() {
 
   const allData = [...normalizedSystem, ...apiFacilities, ...apiNursingRooms];
   const seenNames = new Set();
-  return allData.filter(fac => {
+  const deduped = allData.filter(fac => {
     const uniqueKey = `${fac.name}-${fac.region}-${fac.subRegion}`;
     if (seenNames.has(uniqueKey)) return false;
     seenNames.add(uniqueKey);
     return true;
   });
+
+  if (deduped.length >= MIN_EXPECTED_FACILITIES) {
+    saveFacilitySnapshot(deduped);
+    return deduped;
+  }
+
+  const snapshot = loadFacilitySnapshot();
+  if (snapshot) {
+    console.warn('SHIELD Agent: Facility data looked incomplete; restored last known good snapshot.');
+    return snapshot;
+  }
+
+  return deduped;
 }
 
 // EXACT categories from uiConstants.js to avoid middle-dot (·) mismatches
@@ -208,4 +244,3 @@ function mapFacilityType(rawType, name) {
   return normalizeCategory(rawType, name);
 }
 // Local helper moved to regionUtils.js
-

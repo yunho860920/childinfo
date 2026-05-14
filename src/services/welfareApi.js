@@ -1,5 +1,32 @@
 // src/services/welfareApi.js
-// 2025~2026 최신 자료 기반 — 전국 공통 16개 + 시·군·구 단위 지역 특화 혜택 포함
+// 2025~2026 최신 자료 기반 — 전국 공통 15개 + 시·군·구 단위 지역 특화 혜택 포함
+
+const WELFARE_SNAPSHOT_PREFIX = 'childinfo_welfare_snapshot:';
+const MIN_EXPECTED_WELFARE_ITEMS = 10;
+
+function getWelfareSnapshotKey(region, subRegion) {
+  return `${WELFARE_SNAPSHOT_PREFIX}${region || '전체'}:${subRegion || '전체'}`;
+}
+
+function loadWelfareSnapshot(region, subRegion) {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(getWelfareSnapshotKey(region, subRegion));
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length >= MIN_EXPECTED_WELFARE_ITEMS ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveWelfareSnapshot(region, subRegion, items) {
+  try {
+    if (typeof window === 'undefined' || !Array.isArray(items) || items.length < MIN_EXPECTED_WELFARE_ITEMS) return;
+    window.localStorage.setItem(getWelfareSnapshotKey(region, subRegion), JSON.stringify(items));
+  } catch (e) {
+    // localStorage may be unavailable in private/restricted browsing.
+  }
+}
 
 /**
  * 복지 혜택 조회 (전국 공통 + 지역별 특화)
@@ -9,7 +36,20 @@
 export async function fetchWelfareServices(region = '전체', subRegion = '전체') {
   const roadmapData = getNationalRoadmapContent();
   const regionalData = getRegionalWelfareHighlights(region, subRegion);
-  return mergeWelfareData(roadmapData, regionalData);
+  const merged = mergeWelfareData(roadmapData, regionalData);
+
+  if (merged.length >= MIN_EXPECTED_WELFARE_ITEMS) {
+    saveWelfareSnapshot(region, subRegion, merged);
+    return merged;
+  }
+
+  const snapshot = loadWelfareSnapshot(region, subRegion);
+  if (snapshot) {
+    console.warn('SHIELD Agent: Welfare data looked incomplete; restored last known good snapshot.');
+    return snapshot;
+  }
+
+  return merged;
 }
 
 /**
@@ -39,11 +79,11 @@ export function getSubRegions(region) {
 }
 
 // ──────────────────────────────────────────────
-// 전국 공통 필수 로드맵 (16개 항목)
+// 전국 공통 필수 로드맵
 // ──────────────────────────────────────────────
 function getNationalRoadmapContent() {
   return [
-    // ── Stage 0: 임신 준비 (2025-2026 신설/강화) ────────
+    // ── Stage 0: 임신 준비 ────────
     {
       id: 'nat_0_1',
       stage: 0,
@@ -51,9 +91,9 @@ function getNationalRoadmapContent() {
       desc: '가임기 남녀 대상 필수 검진비 지원 (최대 18만원)',
       tags: ['임신 전', '2025년 신설'],
       details: {
-        target: '임신을 희망하는 모든 가임기 남녀 (결혼 여부 무관)',
-        content: '여성: AMH(난소기능검사), 부인과 초음파 등 최대 13만원 / 남성: 정액검사 등 최대 5만원 지원',
-        how: '주소지 관할 보건소 방문 또는 e보건소 온라인 신청',
+        target: '임신을 희망하는 모든 가임기 남녀',
+        content: '여성: AMH, 부인과 초음파(13만원) / 남성: 정액검사(5만원) 지원',
+        how: '보건소 방문 또는 e보건소 온라인 신청',
       },
       link: 'https://www.e-health.go.kr',
     },
@@ -64,134 +104,134 @@ function getNationalRoadmapContent() {
       desc: '소득 제한 폐지, 최대 25회 시술 지원',
       tags: ['난임 지원', '2025년 확대'],
       details: {
-        target: '난임 진단을 받은 부부 (사실혼 포함, 소득 무관)',
-        content: '체외수정 20회, 인공수정 5회 등 총 25회 지원. 시술비 본인부담금 및 비급여 일부 지원',
-        how: '관할 보건소 방문 신청 또는 정부24 온라인 신청',
+        target: '난임 진단을 받은 부부 (소득 무관)',
+        content: '체외수정 20회, 인공수정 5회 등 총 25회 지원',
+        how: '보건소 방문 또는 정부24 온라인 신청',
       },
       link: 'https://www.gov.kr',
     },
-    {
-      id: 'nat_0_3',
-      stage: 0,
-      title: '난임 치료 휴가 확대',
-      desc: '연간 6일로 확대 (유급 2일 포함)',
-      tags: ['직장인 혜택', '2025년 확대'],
-      details: {
-        target: '난임 치료를 받는 모든 근로자',
-        content: '기존 연 3일에서 6일로 확대. 최초 2일은 유급으로 보장됨',
-        how: '사업주에게 시술 확인서 등 제출 후 신청',
-      },
-      link: 'https://www.moel.go.kr',
-    },
 
-    // ── Stage 1: 임신 중 ──────────────────────
+    // ── Stage 1: 임신 중 ────────
     {
       id: 'nat_1',
       stage: 1,
       title: '임신·출산 진료비 바우처',
-      desc: '국민행복카드 100만원(다태아 140만원) 지원',
-      tags: ['의료비 지원', '바우처'],
+      desc: '국민행복카드 바우처 (단태아 100만, 다태아 140만)',
+      tags: ['의료비', '바우처'],
       details: {
-        target: '임신 확인이 된 모든 건강보험 가입자',
-        content: '단태아 100만원, 다태아 140만원 지원. 산전 진료, 분만 비용 및 출산 후 영유아 진료비 사용 가능',
-        how: '산부인과에서 임신 확인 정보 등록 후 카드사/은행 신청',
+        target: '임신 확인이 된 모든 임산부',
+        content: '의료비 및 약제비 결제 가능한 바우처 지급',
+        how: '산부인과 등록 후 카드사/은행 신청',
       },
       link: 'https://www.hi.nhis.or.kr',
     },
     {
-      id: 'nat_1_work',
+      id: 'nat_1_health',
       stage: 1,
-      title: '임신기 근로시간 단축',
-      desc: '임신 전 기간 또는 초기/후기 2시간 단축 근무',
-      tags: ['직장인 혜택', '2025년 강화'],
+      title: '보건소 모자보건사업',
+      desc: '엽산제·철분제 제공 및 산전 검사 지원',
+      tags: ['임신 중', '보건소'],
       details: {
-        target: '임신 중인 모든 근로자',
-        content: '임신 12주 이내 또는 32주 이후 하루 2시간 단축 근무 가능 (임금 삭감 없음). 고위험 임산부는 의사 진단 시 전 기간 가능',
-        how: '사용자에게 진단서 제출 후 신청',
+        target: '보건소에 등록된 임산부',
+        content: '엽산제/철분제 무료 제공 및 기초 산전 검사 지원',
+        how: '관할 보건소 방문 등록',
       },
-      link: 'https://www.moel.go.kr',
+      link: 'https://www.e-health.go.kr',
+    },
+    {
+      id: 'nat_1_train',
+      stage: 1,
+      title: 'KTX/SRT 임산부 할인',
+      desc: '특실 업그레이드 또는 운임 할인',
+      tags: ['임신 중', '교통 할인'],
+      details: {
+        target: '임산부 및 동반 1인',
+        content: 'KTX 특실 업그레이드 또는 SRT 운임 30% 할인',
+        how: '코레일/SR 홈페이지 등록 후 예매',
+      },
+      link: 'https://www.letskorail.com',
     },
 
-    // ── Stage 2: 탄생 직후 ────────────────────
-    {
-      id: 'nat_3',
-      stage: 2,
-      title: '행복출산 원스톱 서비스',
-      desc: '출생신고와 동시에 모든 정부 혜택 통합 신청',
-      tags: ['필수 신청', '통합 행정'],
-      details: {
-        target: '출생 신고를 하는 부모',
-        content: '부모급여, 아동수당, 첫만남이용권, 전기료 할인 등을 한 번에 신청',
-        how: '정부24 온라인 신청 또는 주민센터 방문',
-      },
-      link: 'https://www.gov.kr',
-    },
+    // ── Stage 2: 탄생 직후 ────────
     {
       id: 'nat_4',
       stage: 2,
-      title: '첫만남이용권 (바우처)',
+      title: '첫만남이용권',
       desc: '첫째 200만원, 둘째 이상 300만원 지급',
-      tags: ['일시 지급', '바우처'],
+      tags: ['출생아', '바우처'],
       details: {
-        target: '2024년 이후 출생아 (주민등록번호 부여 아동)',
-        content: '둘째 아이부터 300만원으로 상향됨. 국민행복카드 포인트로 지급하며 출생일로부터 2년 내 사용 가능',
-        how: '복지로/정부24 온라인 신청 또는 주민센터 방문 신청',
+        target: '출생 신고를 마친 아동',
+        content: '출생아당 바우처 포인트 지급',
+        how: '정부24/복지로 또는 주민센터 신청',
+      },
+      link: 'https://www.bokjiro.go.kr',
+    },
+    {
+      id: 'nat_2_care',
+      stage: 2,
+      title: '산모·신생아 건강관리 지원',
+      desc: '산후도우미 가정 방문 서비스 지원',
+      tags: ['출산 후', '방문 지원'],
+      details: {
+        target: '출산 가정 (소득 기준 충족 시)',
+        content: '전문 관리사의 산후조리 및 신생아 돌봄 지원',
+        how: '보건소 또는 복지로 온라인 신청',
       },
       link: 'https://www.bokjiro.go.kr',
     },
     {
       id: 'nat_5',
       stage: 2,
-      title: '부모급여 (2025~2026)',
-      desc: '0세 월 100만원 / 1세 월 50만원 현금 지급',
-      tags: ['매월 현금', '정부 지원'],
+      title: '부모급여',
+      desc: '0세 월 100만원 / 1세 월 50만원 지급',
+      tags: ['매월 현금', '부모 지원'],
       details: {
-        target: '만 2세 미만 영아를 양육하는 부모',
-        content: '0세(0~11개월) 월 100만원, 1세(12~23개월) 월 50만원 지급. 어린이집 이용 시 보육료 바우처 차감 후 잔액 현금 지급',
-        how: '출생 후 60일 이내 복지로 또는 주민센터 신청 (60일 경과 시 소급 불가)',
+        target: '만 2세 미만 영아 양육 부모',
+        content: '현금 또는 보육료 바우처로 지급',
+        how: '출생 후 60일 이내 복지로 또는 주민센터 신청',
       },
       link: 'https://www.bokjiro.go.kr',
     },
 
-    // ── Stage 3: 초기 정착 (1~3개월) ───────────
+    // ── Stage 3: 초기 정착 ────────
     {
-      id: 'nat_6',
+      id: 'nat_7',
       stage: 3,
-      title: '6+6 부모육아휴직제',
-      desc: '부모 동시 휴직 시 첫 6개월 최대 3,900만원 지원',
+      title: '육아휴직 급여',
+      desc: '첫 3개월 월 최대 250만원 (사후지급금 폐지)',
       tags: ['육아휴직', '급여 인상'],
       details: {
-        target: '생후 18개월 이내 자녀를 둔 맞벌이 부모',
-        content: '부모가 함께 육아휴직 사용 시 첫 6개월간 통상임금의 100% 지원 (월 최대 200~450만원 차등)',
+        target: '고용보험 가입 근로자',
+        content: '휴직 중 전액 수령 가능한 육아휴직 급여',
         how: '고용보험 홈페이지 신청',
       },
       link: 'https://www.ei.go.kr',
     },
-    {
-      id: 'nat_7',
-      stage: 3,
-      title: '육아휴직 급여 (2025~2026)',
-      desc: '첫 3개월 월 최대 250만원 지원 (사후지급금 폐지)',
-      tags: ['육아휴직', '급여 인상'],
-      details: {
-        target: '고용보험 가입 근로자',
-        content: '1~3개월 250만원 / 4~6개월 200만원 / 7개월 이후 160만원. 복직 후 지급하던 25% 사후지급금이 완전히 폐지되어 휴직 중 전액 수령',
-        how: '고용보험 홈페이지(ei.go.kr) 또는 모바일 앱 신청',
-      },
-      link: 'https://www.ei.go.kr',
-    },
 
-    // ── Stage 4: 성장 가속 (4~12개월) ──────────
+    // ── Stage 4: 성장 가속 ────────
     {
       id: 'nat_9',
       stage: 4,
-      title: '아동수당 (2026년 대상 확대)',
-      desc: '매월 10만원~13만원 지급 (만 9세 미만)',
-      tags: ['매월 현금', '2026년 확대'],
+      title: '아동수당',
+      desc: '매월 10만원 지급 (만 8세 미만)',
+      tags: ['매월 현금', '필수 혜택'],
       details: {
-        target: '대한민국 모든 아동 (2026년부터 만 9세 미만)',
-        content: '수도권 월 10만원, 비수도권 월 10.5만원, 인구감소지역 최대 13만원(지역화폐 선택 시) 차등 지급',
-        how: '복지로/정부24 온라인 신청 또는 주민센터 방문',
+        target: '대한민국 모든 아동',
+        content: '소득 무관 매월 10만원 지급',
+        how: '복지로 또는 주민센터 신청',
+      },
+      link: 'https://www.bokjiro.go.kr',
+    },
+    {
+      id: 'nat_diaper',
+      stage: 4,
+      title: '기저귀·조제분유 지원',
+      desc: '저소득층 및 다자녀 가구 바우처',
+      tags: ['성장 지원', '바우처'],
+      details: {
+        target: '저소득층 또는 2자녀 이상 가구',
+        content: '기저귀 및 조제분유 구매 바우처',
+        how: '보건소 또는 복지로 신청',
       },
       link: 'https://www.bokjiro.go.kr',
     },
@@ -199,70 +239,57 @@ function getNationalRoadmapContent() {
       id: 'nat_10',
       stage: 4,
       title: '영유아 건강검진 (무료)',
-      desc: '생후 14일부터 71개월까지 총 8회 무료 검진',
+      desc: '생후 14일부터 71개월까지 총 8회',
       tags: ['건강 관리', '무료'],
       details: {
         target: '모든 영유아',
-        content: '신체 발달 및 발달 선별검사 실시. 결과는 모바일 앱(The건강보험)에서 확인 가능',
+        content: '신체 발달 및 발달 선별검사 실시',
         how: '지정 검진기관 예약 후 방문',
       },
       link: 'https://www.hi.nhis.or.kr',
     },
 
-    // ── Stage 5: 유아기 발전 (13~36개월) ────────
+    // ── Stage 5: 유아기 발전 ────────
     {
-      id: 'nat_14_housing',
+      id: 'nat_home_care',
       stage: 5,
-      title: '신생아 특례대출 확대',
-      desc: '출산 가구 대상 최저 1%대 주택 담보 대출',
-      tags: ['주거 지원', '2025년 완화'],
+      title: '가정양육수당',
+      desc: '어린이집 미이용 시 월 10~20만원 지급',
+      tags: ['가정 양육', '현금'],
       details: {
-        target: '대출 신청일 기준 2년 이내 출산한 무주택 가구',
-        content: '소득 기준 부부 합산 2.5억원 이하로 대폭 완화 예정. 9억원 이하 주택 대상 최대 5억원 대출',
-        how: '주택도시기금 기금e든든 홈페이지 신청',
+        target: '부모급여 종료 후 가정 양육 아동',
+        content: '24개월부터 취학 전까지 지급',
+        how: '주민센터 또는 복지로 신청',
       },
-      link: 'https://enhuf.molit.go.kr',
-    },
-    {
-      id: 'nat_12',
-      stage: 5,
-      title: '다자녀 K-패스 환급',
-      desc: '2자녀 30%, 3자녀 이상 50% 대중교통비 환급',
-      tags: ['교통비 지원', '2025년 신설'],
-      details: {
-        target: 'K-패스 이용자 중 다자녀 가구',
-        content: '만 18세 이하 자녀가 2명 이상인 경우 교통비 환급 비율 상향 적용',
-        how: 'K-패스 앱에서 다자녀 인증 후 혜택 적용',
-      },
-      link: 'https://www.korea-pass.kr',
+      link: 'https://www.bokjiro.go.kr',
     },
 
-    // ── Stage 6: 취학 전 (37~60개월) ────────────
+    // ── Stage 6: 취학 전 ────────
     {
       id: 'nat_15',
       stage: 6,
-      title: '누리과정 지원 (3~5세)',
-      desc: '유치원 학비 및 어린이집 보육료 전액 지원',
-      tags: ['교육비 지원', '바우처'],
+      title: '보육료 및 유아학비',
+      desc: '어린이집 또는 유치원 이용 지원',
+      tags: ['교육 지원', '바우처'],
       details: {
-        target: '만 3~5세 모든 영유아',
-        content: '유아학비 또는 보육료 바우처 지원. 사립유치원 추가 학비 지원 등 지자체별 상이',
+        target: '만 0~5세 영유아',
+        content: '어린이집 보육료 또는 유치원 학비 지원',
         how: '복지로 온라인 신청',
       },
       link: 'https://www.bokjiro.go.kr',
     },
     {
-      id: 'nat_work_reduce',
+      id: 'nat_child_care',
       stage: 6,
-      title: '육아기 근로시간 단축 확대',
-      desc: '만 12세 이하 자녀까지 대상 확대 (최대 3년)',
-      tags: ['직장인 혜택', '2025년 확대'],
+      title: '아이돌봄 서비스',
+      desc: '만 12세 이하 찾아가는 돌봄 서비스',
+      tags: ['돌봄 지원', '소득별 차등'],
       details: {
-        target: '초등학교 6학년 이하 자녀를 둔 근로자',
-        content: '기존 만 8세에서 만 12세로 대상 확대. 주당 15~35시간으로 근로시간 단축 가능. 통상임금 100% 지원(일부)',
-        how: '고용보험 홈페이지 신청',
+        target: '양육 공백 가정의 만 12세 이하 아동',
+        content: '아이돌보미가 가정 방문하여 돌봄 지원',
+        how: '아이돌봄 홈페이지 신청',
       },
-      link: 'https://www.ei.go.kr',
+      link: 'https://www.idolbom.go.kr',
     },
   ];
 }
@@ -756,7 +783,7 @@ function buildAllHighlights() {
         details: {
           target: '부 또는 모가 출생일 전 6개월 이상 천안시 거주',
           content: '셋째 이상은 5년에 걸쳐 분할 지급',
-          how: '천안시청(cheonan.go.kr) 여성가족과 또는 동 주민센터 신청. 문의 041-521-5373',
+          how: '천안시청(cheonan.go.kr) 여성가족과 또는 동 주민센터 신청',
         },
         link: 'https://www.cheonan.go.kr',
       },
@@ -770,7 +797,7 @@ function buildAllHighlights() {
         details: {
           target: '출생일 기준 6개월 전부터 아산시 거주',
           content: '모바일 아산페이로 지급. 5회 분할 지급',
-          how: '아산시청(asan.go.kr) 여성복지과 또는 동 주민센터 신청. 문의 041-540-2643',
+          how: '아산시청(asan.go.kr) 여성복지과 또는 동 주민센터 신청',
         },
         link: 'https://www.asan.go.kr',
       },
@@ -784,7 +811,7 @@ function buildAllHighlights() {
         details: {
           target: '당진시 거주 출산 가정',
           content: '자녀 순위별 차등 지급',
-          how: '당진시청(dangjin.go.kr) 보건행정과 신청. 문의 041-360-6040',
+          how: '당진시청(dangjin.go.kr) 보건행정과 신청',
         },
         link: 'https://www.dangjin.go.kr',
       },
@@ -804,7 +831,7 @@ function buildAllHighlights() {
         details: {
           target: '청주시 거주 출산 가정',
           content: '1년차 100만 / 2~5년차 각 200만 / 6년차 100만원. 매년 생일 시기에 지급',
-          how: '청주시청(cheongju.go.kr) 인구정책담당관 신청. 문의 043-220-4764',
+          how: '청주시청(cheongju.go.kr) 인구정책담당관 신청',
         },
         link: 'https://www.cheongju.go.kr',
       },
@@ -823,7 +850,7 @@ function buildAllHighlights() {
         tags: ['전남도 전용', '전국 최초'],
         details: {
           target: '2024년 이후 전남 출생아 (도내 거주 유지)',
-          content: '국가 아동수당과 별도로 전라남도에서 매월 20만원을 10세까지(고교 졸업 전까지 확대 추진 중) 지원',
+          content: '국가 아동수당과 별도로 전라남도에서 매월 20만원을 10세까지 지원',
           how: '거주지 읍면동 행정복지센터 신청',
         },
         link: 'https://www.jeonnam.go.kr',
@@ -990,9 +1017,9 @@ function buildAllHighlights() {
   };
 }
 
-// ──────────────────────────────────────────────
-// 데이터 병합 및 정렬
-// ──────────────────────────────────────────────
+/**
+ * 데이터 병합 및 정렬
+ */
 function mergeWelfareData(national, regional) {
   const combined = [...national, ...regional];
   return combined.sort((a, b) => a.stage - b.stage);

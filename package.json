@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "guard:data": "node scripts/data-guard.mjs",
+    "build": "npm run guard:data && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

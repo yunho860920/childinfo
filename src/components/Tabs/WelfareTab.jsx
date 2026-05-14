@@ -1,9 +1,10 @@
 // src/components/Tabs/WelfareTab.jsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Navigation, X, ChevronDown, MapPin, CheckCircle2, ExternalLink, AlertCircle } from 'lucide-react';
+import { Navigation, X, ChevronDown, MapPin, CheckCircle2, ExternalLink, AlertCircle, Sparkles } from 'lucide-react';
 import { WELFARE_STAGES, ALL_REGIONS } from '../../constants/uiConstants';
 import { cn } from '../../utils/uiUtils';
+import { getSubRegions } from '../../services/welfareApi';
 
 const WelfareTab = ({
   welfareItems = [],
@@ -19,7 +20,8 @@ const WelfareTab = ({
   isLocatingWelfare,
   setIsLocatingWelfare,
   welfareLocationMsg,
-  setWelfareLocationMsg
+  setWelfareLocationMsg,
+  handleWelfareGeolocation
 }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 pb-12">
@@ -28,23 +30,104 @@ const WelfareTab = ({
           <h3 className="text-2xl font-bold text-brand-gray-900 dark:text-white">맞춤형 복지 혜택</h3>
           <p className="text-brand-gray-500 dark:text-brand-gray-400 mt-1 text-sm">아이의 성장 단계와 지역에 맞는 혜택을 확인하세요.</p>
         </div>
+        <button
+          onClick={handleWelfareGeolocation}
+          className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-apple-card border border-brand-gray-200 dark:border-apple-border rounded-2xl text-sm font-black dark:text-brand-gray-100 shadow-sm hover:border-brand-primary hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+          disabled={isLocatingWelfare}
+        >
+          <Navigation size={16} className={isLocatingWelfare ? 'animate-spin' : 'text-brand-primary'} />
+          {isLocatingWelfare ? '위치 확인 중...' : '내 주변 혜택 찾기'}
+        </button>
       </div>
 
-      <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2rem] p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row gap-4 mb-5">
-          <div className="flex-1">
-            <p className="text-[10px] font-black text-brand-gray-400 dark:text-brand-gray-500 uppercase tracking-widest mb-2 px-1">거주 지역 선택</p>
-            <div className="flex gap-2">
-              <select 
-                value={welfareRegion} 
-                onChange={(e) => { setWelfareRegion(e.target.value); setWelfareSubRegion('전체'); }}
-                className="flex-1 h-11 bg-brand-gray-50 dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-xl px-3 text-sm font-bold dark:text-white outline-none focus:border-brand-primary transition-all"
-              >
-                {ALL_REGIONS.map(r => <option key={r} value={r} className="dark:bg-apple-card">{r}</option>)}
-              </select>
+      <AnimatePresence>
+        {welfareLocationMsg && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            className={cn("p-5 rounded-[1.5rem] text-sm font-black flex justify-between items-center shadow-sm", 
+              welfareLocationMsg.type === 'error' ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <Sparkles size={18} className="text-brand-primary" />
+              {welfareLocationMsg.text}
             </div>
+            <X size={20} onClick={() => setWelfareLocationMsg(null)} className="cursor-pointer opacity-60 hover:opacity-100" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 거주 지역 선택 섹션 - 톤앤매너 최적화 */}
+      <div className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border rounded-[2.5rem] p-8 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-brand-primary/10 rounded-2xl flex items-center justify-center text-brand-primary">
+            <MapPin size={20} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest leading-none mb-1">Location</p>
+            <h4 className="text-lg font-black text-brand-gray-900 dark:text-white">거주 지역 선택</h4>
           </div>
         </div>
+
+        {/* 광역 시/도 선택 */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] font-bold text-brand-gray-400 uppercase tracking-tighter">시/도 선택</span>
+            <span className="text-[11px] font-black text-brand-primary">{welfareRegion}</span>
+          </div>
+          <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
+            {ALL_REGIONS.map((r) => (
+              <button
+                key={r}
+                onClick={() => {
+                  setWelfareRegion(r);
+                  setWelfareSubRegion('전체');
+                }}
+                className={cn(
+                  "px-5 py-2.5 rounded-2xl text-xs font-black transition-all duration-300 border whitespace-nowrap",
+                  welfareRegion === r
+                    ? "bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20"
+                    : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-500 dark:text-brand-gray-400 border-transparent hover:border-brand-primary/30"
+                )}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 시/군/구 선택 (지역이 선택된 경우에만 노출) */}
+        <AnimatePresence mode="wait">
+          {welfareRegion !== '전체' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 pt-4 border-t border-brand-gray-50 dark:border-white/5"
+            >
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] font-bold text-brand-gray-400 uppercase tracking-tighter">시/군/구 상세</span>
+                <span className="text-[11px] font-black text-brand-secondary">{welfareSubRegion}</span>
+              </div>
+              <div className="flex overflow-x-auto gap-2 pb-2 no-scrollbar">
+                {['전체', ...getSubRegions(welfareRegion)].map((sr) => (
+                  <button
+                    key={sr}
+                    onClick={() => setWelfareSubRegion(sr)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[11px] font-black transition-all duration-300 border whitespace-nowrap",
+                      welfareSubRegion === sr
+                        ? "bg-brand-secondary text-white border-brand-secondary shadow-lg shadow-brand-secondary/20"
+                        : "bg-brand-gray-50 dark:bg-white/5 text-brand-gray-500 dark:text-brand-gray-400 border-transparent hover:border-brand-secondary/30"
+                    )}
+                  >
+                    {sr}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar">

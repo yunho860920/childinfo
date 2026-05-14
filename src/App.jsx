@@ -391,9 +391,9 @@ function App() {
           headers: { 'Accept-Language': 'ko-KR' }
         });
         const data = await res.json();
-        const city = data.address.city || data.address.province || data.address.state || '';
-        const district = data.address.borough || data.address.district || data.address.city_district || '';
-        const neighborhood = data.address.suburb || data.address.neighbourhood || data.address.village || data.address.town || data.address.hamlet || '전체';
+        const city = data.address?.city || data.address?.province || data.address?.state || '';
+        const district = data.address?.borough || data.address?.district || data.address?.city_district || '';
+        const neighborhood = data.address?.suburb || data.address?.neighbourhood || data.address?.village || data.address?.town || data.address?.hamlet || '전체';
         
         let foundRegion = '전체';
         const regions = ['서울','경기','인천','부산','대구','대전','광주','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'];
@@ -416,6 +416,41 @@ function App() {
     }, () => {
       setLocationMsg({ type: 'error', text: '위치 권한이 거부되었습니다.' });
       setIsLocating(false);
+    });
+  };
+
+  const handleWelfareGeolocation = () => {
+    setIsLocatingWelfare(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`, {
+          headers: { 'Accept-Language': 'ko-KR' }
+        });
+        const data = await res.json();
+        const city = data.address?.city || data.address?.province || data.address?.state || '';
+        const district = data.address?.borough || data.address?.district || data.address?.city_district || '';
+        
+        let foundRegion = '전체';
+        const regions = ['서울','경기','인천','부산','대구','대전','광주','울산','세종','강원','충북','충남','전북','전남','경북','경남','제주'];
+        for (const r of regions) {
+          if (city.includes(r) || data.address.province?.includes(r) || data.address.state?.includes(r)) {
+            foundRegion = r;
+            break;
+          }
+        }
+        
+        setWelfareRegion(foundRegion);
+        setWelfareSubRegion(district || '전체');
+        setWelfareLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${district}) 기반 혜택을 찾았습니다.` });
+      } catch (err) {
+        setWelfareLocationMsg({ type: 'error', text: '위치 정보를 분석할 수 없습니다.' });
+      } finally {
+        setIsLocatingWelfare(false);
+      }
+    }, () => {
+      setWelfareLocationMsg({ type: 'error', text: '위치 권한이 거부되었습니다.' });
+      setIsLocatingWelfare(false);
     });
   };
 
@@ -576,9 +611,7 @@ function App() {
       <header className="sticky top-0 z-50 bg-[var(--apple-card)]/80 dark:bg-apple-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
-            <div className="w-9 h-9 bg-brand-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-all shadow-sm">
-              <ShieldCheck className="text-white" size={20} />
-            </div>
+            <img src="/logo.png" alt="ChildInfo Logo" className="w-9 h-9 rounded-xl overflow-hidden group-hover:scale-105 transition-all shadow-sm object-cover" />
             <h1 className="text-[19px] font-bold tracking-tight text-brand-gray-900 dark:text-white">
               Child<span className="text-brand-primary">Info</span>
             </h1>
@@ -649,7 +682,7 @@ function App() {
             />
           )}
           {activeTab === 'welfare' && (
-            <WelfareTab key="welfare" childInfo={childInfo} welfareItems={welfareItems} selectedWelfareStage={selectedWelfareStage} setSelectedWelfareStage={setSelectedWelfareStage} isLoadingWelfare={isLoadingWelfare} welfareRegion={welfareRegion} setWelfareRegion={setWelfareRegion} welfareSubRegion={welfareSubRegion} setWelfareSubRegion={setWelfareSubRegion} expandedWelfareId={expandedWelfareId} setExpandedWelfareId={setExpandedWelfareId} isLocatingWelfare={isLocatingWelfare} setIsLocatingWelfare={setIsLocatingWelfare} welfareLocationMsg={welfareLocationMsg} setWelfareLocationMsg={setWelfareLocationMsg} />
+            <WelfareTab key="welfare" childInfo={childInfo} welfareItems={welfareItems} selectedWelfareStage={selectedWelfareStage} setSelectedWelfareStage={setSelectedWelfareStage} isLoadingWelfare={isLoadingWelfare} welfareRegion={welfareRegion} setWelfareRegion={setWelfareRegion} welfareSubRegion={welfareSubRegion} setWelfareSubRegion={setWelfareSubRegion} expandedWelfareId={expandedWelfareId} setExpandedWelfareId={setExpandedWelfareId} isLocatingWelfare={isLocatingWelfare} setIsLocatingWelfare={setIsLocatingWelfare} welfareLocationMsg={welfareLocationMsg} setWelfareLocationMsg={setWelfareLocationMsg} handleWelfareGeolocation={handleWelfareGeolocation} />
           )}
           {activeTab === 'health' && (
             <HealthTab 
