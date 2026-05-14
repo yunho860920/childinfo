@@ -7,9 +7,12 @@
     "dev": "vite",
     "guard:data": "node scripts/data-guard.mjs",
     "build": "npm run guard:data && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ait:build": "npx ait build",
+    "ait:deploy": "npx ait deploy"
   },
   "dependencies": {
+    "@apps-in-toss/web-framework": "^2.5.1",
     "@supabase/supabase-js": "^2.103.0",
     "clsx": "^2.1.0",
     "crypto-js": "^4.2.0",
