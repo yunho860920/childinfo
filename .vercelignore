@@ -1,0 +1,28 @@
+# Dependency and Build outputs
+node_modules/
+dist/
+dist-ait/
+.env
+.env.*
+.vercel/
+
+# VS Code / IDE files
+.vscode/
+.codexrc
+.granite/
+*.vsix
+*.zip
+
+# App development temp/scratch files
+scratch/
+scratch-vsix/
+skills/
+myfirstinfantcare.ait
+
+# Images originals
+public/Originals/
+logos/
+
+# System files
+.DS_Store
+Thumbs.db
