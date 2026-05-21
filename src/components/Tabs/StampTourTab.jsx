@@ -15,7 +15,6 @@ import {
   Hammer,
   Compass,
   RefreshCw,
-  Sliders,
   CheckCircle2,
   XCircle
 } from 'lucide-react';
@@ -96,29 +95,10 @@ const StampTourTab = () => {
   const [locationLoading, setLocationLoading] = React.useState(false);
   const [locationError, setLocationError] = React.useState(null);
   
-  // 개발자용 가상 위치 시뮬레이션 상태
-  const [isMock, setIsMock] = React.useState(false);
-  const [mockSpotId, setMockSpotId] = React.useState('');
-  const [showDeveloperConsole, setShowDeveloperConsole] = React.useState(false);
+
 
   // 내 위치 갱신 함수
   const updateLocation = React.useCallback((silent = false) => {
-    if (isMock) {
-      if (mockSpotId) {
-        const spot = SEOUL_SPOTS.find(s => s.id === mockSpotId);
-        if (spot) {
-          // 가상 위치 적용 (정확한 장소 좌표)
-          setUserLocation({ lat: spot.lat, lng: spot.lng });
-          setLocationError(null);
-        }
-      } else {
-        // Mock 모드지만 장소가 선택되지 않은 경우 서울시청 기본 좌표
-        setUserLocation({ lat: 37.5665, lng: 126.9780 });
-        setLocationError(null);
-      }
-      return;
-    }
-
     if (!navigator.geolocation) {
       setLocationError("이 브라우저 및 디바이스는 GPS 기능을 지원하지 않습니다.");
       return;
@@ -145,12 +125,9 @@ const StampTourTab = () => {
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [isMock, mockSpotId]);
+  }, []);
 
-  // 가상 위치 상태 또는 mockSpotId가 변경될 때 내 위치 갱신
-  React.useEffect(() => {
-    updateLocation(true);
-  }, [isMock, mockSpotId, updateLocation]);
+
 
   // 마운트 시 자동 위치 가져오기 시도
   React.useEffect(() => {
@@ -276,11 +253,6 @@ const StampTourTab = () => {
                 <div className="text-left">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black dark:text-white">GPS 실제 방문 인증 모드</span>
-                    {isMock && (
-                      <span className="bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[9px] font-black px-2 py-0.5 rounded-full border border-amber-500/20">
-                        가상 위치 활성화
-                      </span>
-                    )}
                   </div>
                   <p className="text-xs text-brand-gray-400 font-bold mt-0.5">
                     {locationLoading ? "GPS 신호를 받는 중입니다..." :
@@ -460,94 +432,7 @@ const StampTourTab = () => {
               </div>
             </div>
 
-            {/* 🛠️ 가상 위치 테스터 (Mock Location Simulator) */}
-            <div className="mt-8 bg-gradient-to-br from-amber-500/5 to-amber-600/10 dark:from-amber-950/10 dark:to-amber-900/5 border border-amber-500/20 rounded-[2.5rem] p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center">
-                    <Sliders size={20} />
-                  </div>
-                  <div className="text-left">
-                    <h4 className="text-[15px] font-black dark:text-white">개발자 가상 위치 시뮬레이터</h4>
-                    <p className="text-xs text-brand-gray-400 font-bold">브라우저나 PC 환경에서 GPS 방문 동작을 편리하게 테스트해보세요.</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowDeveloperConsole(!showDeveloperConsole)}
-                  className="px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition-colors active:scale-95 shadow-sm"
-                >
-                  {showDeveloperConsole ? "닫기" : "도구 열기"}
-                </button>
-              </div>
 
-              <AnimatePresence>
-                {showDeveloperConsole && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: "auto", opacity: 1 }} 
-                    exit={{ height: 0, opacity: 0 }} 
-                    className="overflow-hidden mt-4 pt-4 border-t border-amber-500/20 space-y-4"
-                  >
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white/50 dark:bg-apple-card/50 backdrop-blur-sm rounded-2xl">
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          id="mock-toggle" 
-                          checked={isMock}
-                          onChange={(e) => {
-                            setIsMock(e.target.checked);
-                            if (!e.target.checked) setMockSpotId('');
-                          }}
-                          className="w-4 h-4 text-amber-600 border-amber-300 rounded focus:ring-amber-500"
-                        />
-                        <label htmlFor="mock-toggle" className="text-xs font-black dark:text-white cursor-pointer select-none">
-                          가상 위치(Mock Location) 기능 활성화
-                        </label>
-                      </div>
-                      <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
-                        {isMock ? "🔴 시뮬레이터 작동 중" : "⚪ 실제 GPS 기기 신호 대기"}
-                      </span>
-                    </div>
-
-                    {isMock && (
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
-                          내 가상 위치를 지정할 서울 명소 선택:
-                        </label>
-                        <div className="flex gap-2">
-                          <select 
-                            value={mockSpotId} 
-                            onChange={(e) => setMockSpotId(e.target.value)}
-                            className="flex-1 bg-white dark:bg-apple-elevated border border-amber-500/30 text-xs font-bold rounded-2xl px-4 py-3 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          >
-                            <option value="">-- 서울시청 기본 좌표 (가상) --</option>
-                            {SEOUL_SPOTS.map(spot => (
-                              <option key={spot.id} value={spot.id}>
-                                {spot.emoji} {spot.name} (바로 앞순간 이동)
-                              </option>
-                            ))}
-                          </select>
-                          <button 
-                            onClick={() => {
-                              // 강제 갱신
-                              updateLocation(false);
-                            }}
-                            className="px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/20 rounded-2xl font-black text-xs transition-colors active:scale-95"
-                          >
-                            적용
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-brand-gray-400 font-bold leading-normal">
-                          💡 **가상 위치 작동 팁**: 
-                          '경복궁'을 선택하여 가상 위치를 적용하면, 내 현재 GPS가 경복궁 좌표로 매핑됩니다. 
-                          그 후 리스트에서 경복궁 상세를 펼쳐 **'방문 완료'** 버튼을 누르시면 정상적으로 스탬프가 찍힙니다!
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </motion.div>
         ) : (
           <motion.div 
