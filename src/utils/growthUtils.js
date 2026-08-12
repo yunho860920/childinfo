@@ -1,29 +1,6 @@
 // src/utils/growthUtils.js
 import { milestonesData } from '../data/milestones';
 import { getGrowthPercentile } from '../data/growthStandard';
-import CryptoJS from 'crypto-js';
-
-/**
- * SHA-256 해시 유틸리티 (관리자 비밀번호 보안)
- * iOS Safari 호환: crypto.subtle 사용 불가 시 CryptoJS 폴백
- */
-export async function hashPin(pin) {
-  try {
-    // Web Crypto API 사용 가능 시 (HTTPS + 최신 브라우저)
-    if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
-      var encoder = new TextEncoder();
-      var data = encoder.encode(pin);
-      var hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map(function(b) { return b.toString(16).padStart(2, '0'); })
-        .join('');
-    }
-  } catch (e) {
-    console.warn('SHIELD Agent: Web Crypto API failed, using CryptoJS fallback:', e);
-  }
-  // Fallback: CryptoJS SHA-256 (iOS Safari Private Mode, HTTP, etc.)
-  return CryptoJS.SHA256(pin).toString(CryptoJS.enc.Hex);
-}
 
 /**
  * 나이에 따른 발달 이정표(Milestones) 가져오기

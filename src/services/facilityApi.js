@@ -89,15 +89,13 @@ const SIGGUNGU_DICT = {
 };
 
 export async function fetchChildFacilities() {
-  const apiKey = import.meta.env.VITE_BW_API_KEY;
-  const nursingApiKey = import.meta.env.VITE_NURSING_API_KEY;
   let apiFacilities = [];
 
-  if (apiKey) {
+  {
     const pagesToFetch = [1, 2, 10, 80];
     try {
       const requests = pagesToFetch.map(page => {
-        const url = `https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire?serviceKey=${encodeURIComponent(apiKey)}&pageNo=${page}&numOfRows=200&_type=json`;
+        const url = `/api/child-facilities?pageNo=${page}&numOfRows=200`;
         return fetch(url, { signal: AbortSignal.timeout(10000) })
           .then(res => res.ok ? res.json() : null)
           .catch(() => null);
@@ -141,7 +139,7 @@ export async function fetchChildFacilities() {
   let apiNursingRooms = [];
   try {
     // Attempt to use the same API key if applicable, or the service handles its own logic
-    apiNursingRooms = await fetchNursingRoomsFromApi(nursingApiKey);
+    apiNursingRooms = await fetchNursingRoomsFromApi();
   } catch (e) {
     console.error("Nursing Room API Fetch Failed:", e);
   }

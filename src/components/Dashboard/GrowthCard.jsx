@@ -1,8 +1,9 @@
 // src/components/Dashboard/GrowthCard.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Save } from 'lucide-react';
+import { Save, Calendar, Sparkles } from 'lucide-react';
 import ProgressRing from '../common/ProgressRing';
+import { vaccinationSchedule, growthMilestones } from '../../data/healthInfo';
 
 const GrowthCard = ({ 
   childInfo, 
@@ -10,9 +11,76 @@ const GrowthCard = ({
   percentile,
   handleBirthDateChange,
   handleAddGrowthRecord,
-  onShowChart
+  onShowChart,
+  setActiveTab,
+  setSelectedHealthCategory
 }) => {
   const dateInputRef = React.useRef(null);
+
+  // 개월수 기반 맞춤 예방접종 및 발달과업 추천 헬퍼 함수
+  const getRecommendData = () => {
+    const currentMonths = childInfo.months || 0;
+
+    // 1. 예방접종 매칭
+    let matchedVaxGroup = vaccinationSchedule[0];
+    for (let i = 0; i < vaccinationSchedule.length; i++) {
+      if (vaccinationSchedule[i].months >= currentMonths) {
+        matchedVaxGroup = vaccinationSchedule[i];
+        break;
+      }
+    }
+    if (currentMonths > vaccinationSchedule[vaccinationSchedule.length - 1].months) {
+      matchedVaxGroup = vaccinationSchedule[vaccinationSchedule.length - 1];
+    }
+
+    const vaxNames = matchedVaxGroup.vaccines.map(v => v.name);
+    const uniqueNames = Array.from(new Set(vaxNames));
+    const vaxLabel = uniqueNames[0] + (uniqueNames.length > 1 ? ` 외 ${uniqueNames.length - 1}종` : '');
+    const vaxRecommend = {
+      title: `${matchedVaxGroup.label} 접종`,
+      desc: vaxLabel
+    };
+
+    // 2. 발달 마일스톤 매칭
+    let matchedMilestoneGroup = growthMilestones[0];
+    for (let i = 0; i < growthMilestones.length; i++) {
+      if (growthMilestones[i].months >= currentMonths) {
+        matchedMilestoneGroup = growthMilestones[i];
+        break;
+      }
+    }
+    if (currentMonths > growthMilestones[growthMilestones.length - 1].months) {
+      matchedMilestoneGroup = growthMilestones[growthMilestones.length - 1];
+    }
+
+    const milestoneItem = matchedMilestoneGroup.items[0]?.name || '발달 과업';
+    const milestoneRecommend = {
+      title: matchedMilestoneGroup.label,
+      desc: milestoneItem
+    };
+
+    return { vaxRecommend, milestoneRecommend };
+  };
+
+  const { vaxRecommend, milestoneRecommend } = getRecommendData();
+
+  const handleRecommendClick = (type) => {
+    if (!setActiveTab || !setSelectedHealthCategory) return;
+    
+    setActiveTab('health');
+    if (type === 'vaccine') {
+      setSelectedHealthCategory('예방접종 일정');
+    } else {
+      setSelectedHealthCategory('성장 마일스톤');
+    }
+
+    setTimeout(() => {
+      const targetSection = document.getElementById('health-tab-section');
+      if (targetSection) {
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
 
   return (
     <div className="card-container p-6 flex flex-col h-full bg-white dark:bg-apple-card shadow-soft rounded-[32px] border-none">
@@ -115,6 +183,59 @@ const GrowthCard = ({
               placeholder="0.0"
             />
             <span className="text-[13px] font-bold text-brand-gray-400">kg</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 시기별 추천 건강 가이드 */}
+      <div className="bg-brand-gray-50/50 dark:bg-apple-elevated/40 border border-brand-gray-100/50 dark:border-apple-border/40 rounded-[24px] p-4.5 mb-5 space-y-3.5 relative overflow-hidden">
+        <div className="flex justify-between items-center text-[11.5px] font-black text-brand-gray-400 uppercase tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <Sparkles size={11} className="text-brand-primary animate-pulse" />
+            생후 {childInfo.months}개월 추천 가이드
+          </span>
+          <span className="text-[10px] font-black bg-brand-primary/10 text-brand-primary dark:bg-brand-primary/20 px-2 py-0.5 rounded-full">
+            NIP / K-DST 연동
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* 예방접종 추천 */}
+          <div 
+            onClick={() => handleRecommendClick('vaccine')}
+            className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border/60 rounded-xl p-3.5 cursor-pointer hover:scale-[1.02] hover:border-brand-primary/30 transition-all flex flex-col justify-between shadow-xs group"
+          >
+            <div>
+              <span className="text-[10px] font-black text-emerald-500 block mb-1">🛡️ 필수 예방접종</span>
+              <span className="text-[13px] font-black text-brand-gray-800 dark:text-white group-hover:text-brand-primary transition-colors leading-tight">
+                {vaxRecommend.title}
+              </span>
+              <p className="text-[10.5px] text-brand-gray-400 font-bold mt-1 leading-tight line-clamp-1">
+                {vaxRecommend.desc}
+              </p>
+            </div>
+            <span className="text-[9.5px] text-brand-gray-400 font-black mt-3.5 flex items-center gap-0.5 group-hover:text-brand-primary transition-colors">
+              일정 확인하기 <span className="text-[8px] tracking-tighter">▶</span>
+            </span>
+          </div>
+          
+          {/* 발달과업 추천 */}
+          <div 
+            onClick={() => handleRecommendClick('milestone')}
+            className="bg-white dark:bg-apple-card border border-brand-gray-100 dark:border-apple-border/60 rounded-xl p-3.5 cursor-pointer hover:scale-[1.02] hover:border-brand-primary/30 transition-all flex flex-col justify-between shadow-xs group"
+          >
+            <div>
+              <span className="text-[10px] font-black text-blue-500 block mb-1">✨ 발달 마일스톤</span>
+              <span className="text-[13px] font-black text-brand-gray-800 dark:text-white group-hover:text-brand-primary transition-colors leading-tight">
+                {milestoneRecommend.title}
+              </span>
+              <p className="text-[10.5px] text-brand-gray-400 font-bold mt-1 leading-tight line-clamp-1">
+                {milestoneRecommend.desc}
+              </p>
+            </div>
+            <span className="text-[9.5px] text-brand-gray-400 font-black mt-3.5 flex items-center gap-0.5 group-hover:text-brand-primary transition-colors">
+              마일스톤 체크 <span className="text-[8px] tracking-tighter">▶</span>
+            </span>
           </div>
         </div>
       </div>

@@ -16,6 +16,10 @@ scratch-vsix/
 .codexrc
 .granite
 
+# Local safety archives created before facility-data migrations.
+backups/
+data/facilities-v2/rollback/
+
 .granite
 
 .granite

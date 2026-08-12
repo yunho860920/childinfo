@@ -43,10 +43,11 @@ const HealthTab = ({
 
   return (
     <motion.div
+      id="health-tab-section"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="space-y-6 pb-24"
+      className="space-y-6 pb-24 scroll-mt-24"
     >
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div className="shrink-0">

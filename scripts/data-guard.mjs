@@ -16,6 +16,11 @@ const requiredFiles = [
   'src/services/facilityApi.js',
   'src/services/welfareApi.js',
   'src/constants/uiConstants.js',
+  'src/domain/facilities/facilitySchema.js',
+  'src/domain/facilities/childcareAdapter.js',
+  'src/domain/facilities/publicSourceAdapters.js',
+  'data/facilities-v2/source-catalog.json',
+  'api/facility-sources-v2.js',
 ];
 
 const requiredRegionDirs = [

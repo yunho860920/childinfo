@@ -23,21 +23,24 @@ import PracticalTab from './components/Tabs/PracticalTab';
 import WelfareTab from './components/Tabs/WelfareTab';
 import HealthTab from './components/Tabs/HealthTab';
 import FacilitiesTab from './components/Tabs/FacilitiesTab';
-import ConsultTab from './components/Tabs/ConsultTab';
-import StampTourTab from './components/Tabs/StampTourTab';
+import AiGuideTab from './components/Tabs/AiGuideTab';
+import StampTourTab, { STAMP_TOUR_SPOTS } from './components/Tabs/StampTourTab';
 import MilestoneModal from './components/Modals/MilestoneModal';
 import GrowthChartModal from './components/GrowthChartModal';
 import TemperatureChartModal from './components/Dashboard/TemperatureChartModal';
+import FeedingCard from './components/Dashboard/FeedingCard';
+import FeedingHistoryModal from './components/Dashboard/FeedingHistoryModal';
 import ThemeToggle from './components/common/ThemeToggle';
 
 // Services & Utils
 import { consultationService } from './services/consultationService';
 import { fetchWelfareServices } from './services/welfareApi';
 import { fetchChildFacilities, getFilteredFacilities } from './services/facilityApi';
-import { loadSecureData, saveSecureData } from './utils/security';
-import { hashPin, calculateMonths, calculatePercentile } from './utils/growthUtils';
+import { calculateMonths, calculatePercentile } from './utils/growthUtils';
 import { FACILITIES_PER_PAGE, ALL_REGIONS } from './constants/uiConstants';
 import { normalizeDong } from './utils/regionUtils';
+
+const AI_GUIDE_ENABLED = true;
 
 
 function App() {
@@ -53,8 +56,6 @@ function App() {
     return true;
   });
   const [activeTab, setActiveTab] = React.useState('health');
-  const [logoClickCount, setLogoClickCount] = React.useState(0);
-  const [logoLastClick, setLogoLastClick] = React.useState(0);
   const [childInfo, setChildInfo] = React.useState(() => {
     const DEFAULT_PROFILE = {
       name: '우리 아이 별칭',
@@ -95,6 +96,15 @@ function App() {
     return [];
   });
   const [showTempChart, setShowTempChart] = React.useState(false);
+
+  const [feedingRecords, setFeedingRecords] = React.useState(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('childinfo_feeding_history') : null;
+      if (saved) return JSON.parse(saved) || [];
+    } catch (e) { return []; }
+    return [];
+  });
+  const [showFeedingChart, setShowFeedingChart] = React.useState(false);
 
   const [toast, setToast] = React.useState({ show: false, message: '', type: 'info' });
   const triggerToast = (message, type = 'info') => {
@@ -152,6 +162,7 @@ function App() {
   const [isLocating, setIsLocating] = React.useState(false);
   const [locationMsg, setLocationMsg] = React.useState(null);
   const [selectedFacilityCategory, setSelectedFacilityCategory] = React.useState('전체');
+  const [stampTarget, setStampTarget] = React.useState({ region: 'seoul', spotId: null });
 
   const [userId, setUserId] = React.useState(() => {
     const ANONYMOUS_PREFIX = 'user_anonymous_' + Math.random().toString(36).substring(2, 7);
@@ -187,9 +198,9 @@ function App() {
   const [adminSelectedUserId, setAdminSelectedUserId] = React.useState(null);
   const [allConsultations, setAllConsultations] = React.useState({});
   const [showAdminModal, setShowAdminModal] = React.useState(false);
-  const [pin, setPin] = React.useState('');
-  const [pinAttempts, setPinAttempts] = React.useState(0);
-  const [isLocked, setIsLocked] = React.useState(false);
+  const [adminEmail, setAdminEmail] = React.useState('');
+  const [adminPassword, setAdminPassword] = React.useState('');
+  const [adminLoginError, setAdminLoginError] = React.useState('');
 
 
   // --- Effects ---
@@ -209,9 +220,11 @@ function App() {
   React.useEffect(() => {
     const initAuth = async () => {
       try {
-        const user = await consultationService.signInAnonymously();
+        const existingUser = await consultationService.getCurrentUser();
+        const user = existingUser || await consultationService.signInAnonymously();
         if (user) {
           setUserId(user.id);
+          setIsAdmin(consultationService.isAdminUser(user));
           localStorage.setItem('childinfo_user_id', user.id);
         }
       } catch (e) {
@@ -223,6 +236,11 @@ function App() {
 
   // ── 상담 데이터 로드 및 실시간 구독 ──────────────────────────────────────
   React.useEffect(() => {
+    if (AI_GUIDE_ENABLED) {
+      setHasUnreadConsultation(false);
+      return undefined;
+    }
+
     const welcomeMessage = { 
       id: 'welcome', 
       type: 'answer', 
@@ -308,13 +326,6 @@ function App() {
   }, [userId, isAdmin, activeTab]);
 
   React.useEffect(() => {
-    if (logoClickCount > 0) {
-      const timer = setTimeout(() => setLogoClickCount(0), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [logoClickCount]);
-
-  React.useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('childinfo_profile', JSON.stringify(childInfo));
@@ -368,6 +379,37 @@ function App() {
     setTempRecords(newRecords);
     localStorage.setItem('childinfo_temp_history', JSON.stringify(newRecords));
     triggerToast("체온 정보가 저장되었습니다.");
+  };
+
+  const handleSaveFeedingRecord = (record) => {
+    const newRec = {
+      id: Date.now(),
+      date: record.date || new Date().toISOString(),
+      type: record.type,
+      amount: record.amount || 0,
+      breastLeft: record.breastLeft || 0,
+      breastRight: record.breastRight || 0,
+      breastTotal: record.breastTotal || 0,
+      notes: record.notes || ""
+    };
+    const newRecords = [newRec, ...feedingRecords].slice(0, 100);
+    setFeedingRecords(newRecords);
+    localStorage.setItem('childinfo_feeding_history', JSON.stringify(newRecords));
+    triggerToast("수유 정보가 저장되었습니다.");
+  };
+
+  const handleDeleteFeedingRecord = (id) => {
+    const newRecords = feedingRecords.filter(r => r.id !== id);
+    setFeedingRecords(newRecords);
+    localStorage.setItem('childinfo_feeding_history', JSON.stringify(newRecords));
+    triggerToast("수유 기록이 삭제되었습니다.");
+  };
+
+  const handleUpdateFeedingRecord = (updatedRecord) => {
+    const newRecords = feedingRecords.map(r => r.id === updatedRecord.id ? updatedRecord : r);
+    setFeedingRecords(newRecords);
+    localStorage.setItem('childinfo_feeding_history', JSON.stringify(newRecords));
+    triggerToast("수유 기록이 수정되었습니다.");
   };
 
   const toggleVaccine = (id) => {
@@ -463,61 +505,85 @@ function App() {
     setFacilityPage(1);
   };
 
-  const handleAdminLogin = async () => {
-    if (isLocked) return;
-    const secureData = loadSecureData('childinfo_admin');
-    const storedHash = secureData?.adminHash;
-    
-    if (!storedHash) {
-      const newHash = await hashPin(pin);
-      saveSecureData('childinfo_admin', { adminHash: newHash });
-      setIsAdmin(true);
-      setShowAdminModal(false);
-      setPin('');
-      triggerToast('새로운 관리자 PIN이 설정되었습니다.', 'success');
+  const handleAiGuideNavigate = (action) => {
+    if (!action) return;
+
+    if (action.type === 'modal') {
+      if (action.modal === 'growth') setShowGrowthChart(true);
+      if (action.modal === 'temperature') setShowTempChart(true);
+      if (action.modal === 'feeding') setShowFeedingChart(true);
       return;
     }
 
-    const inputHash = await hashPin(pin);
-    if (inputHash === storedHash) {
+    if (!action.tab) return;
+
+    if (action.tab === 'health' && action.healthCategory) {
+      setSelectedHealthCategory(action.healthCategory);
+    }
+
+    if (action.tab === 'practical' && Number.isFinite(Number(action.timelineMonth))) {
+      setSelectedTimelineMonth(getTimelineMonthForMonths(Number(action.timelineMonth)));
+    }
+
+    if (action.tab === 'facilities') {
+      setSearchQuery(action.query || '');
+      if (action.region) setSelectedRegion(action.region);
+      if (action.subRegion) setSelectedSubRegion(action.subRegion);
+      setFacilityPage(1);
+    }
+
+    if (action.tab === 'welfare') {
+      if (action.region) {
+        setWelfareRegion(action.region);
+        setWelfareSubRegion(action.subRegion || '전체');
+      }
+      if (Number.isFinite(Number(action.welfareStage))) {
+        setSelectedWelfareStage(Number(action.welfareStage));
+      }
+      setExpandedWelfareId(action.welfareId || null);
+    }
+
+    if (action.tab === 'stamps') {
+      setStampTarget({
+        region: action.region || 'seoul',
+        spotId: action.spotId || null
+      });
+    }
+
+    setActiveTab(action.tab);
+    if (action.tab === 'facilities' && action.useLocation) {
+      handleGeolocation();
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAdminLogin = async (event) => {
+    event?.preventDefault();
+    setAdminLoginError('');
+    try {
+      const user = await consultationService.signInAsAdmin(adminEmail.trim(), adminPassword);
+      setUserId(user.id);
       setIsAdmin(true);
       setShowAdminModal(false);
-      setPin('');
-      setPinAttempts(0);
+      setAdminPassword('');
       triggerToast('관리자 모드가 활성화되었습니다.', 'success');
-    } else {
-      const newAttempts = pinAttempts + 1;
-      setPinAttempts(newAttempts);
-      setPin('');
-      if (newAttempts >= 5) {
-        setIsLocked(true);
-        setTimeout(() => { setIsLocked(false); setPinAttempts(0); }, 5 * 60 * 1000);
-      }
+    } catch (error) {
+      setAdminLoginError(error?.message || '관리자 로그인에 실패했습니다.');
     }
   };
 
-  const handleResetPin = async () => {
-    if (!window.confirm('관리자 PIN을 초기화하고 새로 설정하시겠습니까?')) return;
-    localStorage.removeItem('childinfo_admin');
-    setIsAdmin(false);
-    setShowAdminModal(true);
-    triggerToast('PIN이 초기화되었습니다. 새로 입력하세요.', 'info');
-  };
-
-  const handleLogoClick = () => {
-    setActiveTab('health');
-    const now = Date.now();
-    if (now - logoLastClick < 1000) {
-      const newCount = logoClickCount + 1;
-      setLogoClickCount(newCount);
-      if (newCount >= 5) {
-        setShowAdminModal(true);
-        setLogoClickCount(0);
-      }
-    } else {
-      setLogoClickCount(1);
+  const handleAdminSignOut = async () => {
+    try {
+      await consultationService.signOut();
+      const anonymousUser = await consultationService.signInAnonymously();
+      setIsAdmin(false);
+      setAdminSelectedUserId(null);
+      setAllConsultations({});
+      if (anonymousUser) setUserId(anonymousUser.id);
+      triggerToast('관리자 모드에서 로그아웃했습니다.', 'info');
+    } catch (error) {
+      triggerToast(error?.message || '로그아웃에 실패했습니다.', 'error');
     }
-    setLogoLastClick(now);
   };
 
   const handleSendMessage = async (textOverride) => {
@@ -612,13 +678,18 @@ function App() {
     <div className="min-h-screen bg-[var(--apple-bg)] dark:bg-apple-black transition-colors duration-500 selection:bg-brand-primary/10 selection:text-brand-primary">
       <header className="sticky top-0 z-50 bg-[var(--apple-card)]/80 dark:bg-apple-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={handleLogoClick}>
+          <button type="button" className="flex items-center gap-2 cursor-pointer group" onClick={() => setActiveTab('health')} aria-label="건강 홈으로 이동">
             <img src="/logo.png" alt="ChildInfo Logo" className="w-9 h-9 rounded-xl overflow-hidden group-hover:scale-105 transition-all shadow-sm object-cover" />
             <h1 className="text-[19px] font-bold tracking-tight text-brand-gray-900 dark:text-white">
               Child<span className="text-brand-primary">Info</span>
             </h1>
-          </div>
+          </button>
           <div className="flex items-center gap-1">
+            {isAdmin ? (
+              <button type="button" onClick={handleAdminSignOut} className="px-3 py-2 text-xs font-bold text-brand-gray-500 hover:text-brand-primary">관리자 로그아웃</button>
+            ) : (
+              <button type="button" onClick={() => setShowAdminModal(true)} className="p-2 rounded-full text-brand-gray-400 hover:text-brand-primary" aria-label="관리자 로그인"><Lock size={18} /></button>
+            )}
             <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           </div>
         </div>
@@ -626,7 +697,7 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10 pb-48">
         {activeTab === 'health' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-full overflow-hidden mb-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-full overflow-hidden mb-10">
             <GrowthCard 
               childInfo={childInfo} 
               setChildInfo={setChildInfo} 
@@ -634,6 +705,14 @@ function App() {
               handleBirthDateChange={handleBirthDateChange} 
               handleAddGrowthRecord={handleAddGrowthRecord} 
               onShowChart={() => setShowGrowthChart(true)}
+              setActiveTab={setActiveTab}
+              setSelectedHealthCategory={setSelectedHealthCategory}
+            />
+            <FeedingCard
+              feedingRecords={feedingRecords}
+              onSaveFeeding={handleSaveFeedingRecord}
+              onShowChart={() => setShowFeedingChart(true)}
+              childInfo={childInfo}
             />
             <TemperatureCard 
               selectedTemp={selectedTemp} 
@@ -651,7 +730,7 @@ function App() {
             { id: 'health', label: '건강', icon: <HeartPulse size={22} /> },
             { id: 'facilities', label: '시설', icon: <MapPin size={22} /> },
             { id: 'stamps', label: '가볼곳', icon: <MapIcon size={22} /> },
-            { id: 'consult', label: '상담', icon: <MessageCircle size={22} /> },
+            { id: 'consult', label: 'AI 안내', icon: <MessageCircle size={22} /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -724,37 +803,25 @@ function App() {
             />
           )}
           {activeTab === 'stamps' && (
-            <StampTourTab key="stamps" />
+            <StampTourTab
+              key={`stamps-${stampTarget.region}-${stampTarget.spotId || 'all'}`}
+              isAdmin={isAdmin}
+              initialRegion={stampTarget.region}
+              focusSpotId={stampTarget.spotId}
+            />
           )}
           {activeTab === 'consult' && (
-            <ConsultTab 
-              key="consult" 
-              userId={userId} 
-              setUserId={setUserId}
+            <AiGuideTab
+              key="ai-guide"
               childInfo={childInfo}
-              consultations={isAdmin ? (adminSelectedUserId ? (allConsultations[adminSelectedUserId] || []) : []) : consultations} 
-              onSendMessage={isAdmin ? (text) => handleAdminAnswer(adminSelectedUserId, text) : handleSendMessage} 
-              onDeleteMessage={handleDeleteMessage}
-              newQuestion={newQuestion} 
-              setNewQuestion={setNewQuestion} 
-              isProfileStored={isProfileStored} 
-              setIsProfileStored={setIsProfileStored} 
-              formName={formName} 
-              setFormName={setFormName} 
-              formAge={formAge} 
-              setFormAge={setFormAge} 
-              formGender={formGender}
-              setFormGender={setFormGender}
-              formCategory={formCategory} 
-              setFormCategory={setFormCategory} 
-              formContent={formContent}
-              setFormContent={setFormContent}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-              allConsultations={allConsultations}
-              adminSelectedUserId={adminSelectedUserId}
-              setAdminSelectedUserId={setAdminSelectedUserId}
-              onDeleteRoom={handleDeleteRoom}
+              facilities={facilities}
+              places={STAMP_TOUR_SPOTS}
+              welfareItems={welfareItems}
+              completedVaccines={completedVaccines}
+              growthRecords={growthRecords}
+              tempRecords={tempRecords}
+              feedingRecords={feedingRecords}
+              onNavigate={handleAiGuideNavigate}
             />
           )}
         </div>
@@ -777,6 +844,16 @@ function App() {
             childInfo={childInfo} 
           />
         )}
+        {showFeedingChart && (
+          <FeedingHistoryModal
+            isOpen={showFeedingChart}
+            onClose={() => setShowFeedingChart(false)}
+            records={feedingRecords}
+            onDeleteRecord={handleDeleteFeedingRecord}
+            onUpdateRecord={handleUpdateFeedingRecord}
+            childInfo={childInfo}
+          />
+        )}
         {showAdminModal && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdminModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
@@ -788,15 +865,17 @@ function App() {
               className="relative bg-white dark:bg-apple-card w-full max-w-sm rounded-[2rem] p-8 shadow-2xl border border-white/20 dark:border-apple-border"
             >
               <button onClick={() => setShowAdminModal(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-brand-gray-100 dark:hover:bg-apple-border transition-colors"><X size={20} className="text-brand-gray-400" /></button>
-              <div className="flex flex-col items-center text-center">
+              <form className="flex flex-col items-center text-center" onSubmit={handleAdminLogin}>
                 <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center text-brand-primary mb-6"><Lock size={32} /></div>
-                <h3 className="text-xl font-black mb-2 dark:text-white">{!loadSecureData('childinfo_admin') ? '관리자 PIN 설정' : '관리자 인증'}</h3>
-                <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 mb-8 font-medium">{!loadSecureData('childinfo_admin') ? '최초 관리자 전용 PIN 번호를 설정하세요.' : '서비스 관리를 위한 PIN 번호를 입력하세요.'}</p>
+                <h3 className="text-xl font-black mb-2 dark:text-white">관리자 로그인</h3>
+                <p className="text-sm text-brand-gray-500 dark:text-brand-gray-400 mb-8 font-medium">관리자 권한이 등록된 계정으로 로그인하세요.</p>
                 <div className="w-full space-y-4">
-                  <input type="password" maxLength="6" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="••••••" disabled={isLocked} className="w-full h-14 bg-brand-gray-50 dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-2xl text-center text-2xl tracking-[0.5em] outline-none focus:border-brand-primary dark:text-white transition-all font-black" />
-                  <button onClick={handleAdminLogin} disabled={pin.length < 4 || isLocked} className="w-full py-4 bg-brand-primary text-white rounded-2xl font-black shadow-lg shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50">{!loadSecureData('childinfo_admin') ? '설정 완료' : '확인'}</button>
+                  <input type="email" autoComplete="username" required value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="관리자 이메일" className="w-full h-14 px-4 bg-brand-gray-50 dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-2xl outline-none focus:border-brand-primary dark:text-white transition-all" />
+                  <input type="password" autoComplete="current-password" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="비밀번호" className="w-full h-14 px-4 bg-brand-gray-50 dark:bg-apple-elevated border border-brand-gray-200 dark:border-apple-border rounded-2xl outline-none focus:border-brand-primary dark:text-white transition-all" />
+                  {adminLoginError && <p role="alert" className="text-sm font-bold text-red-500">{adminLoginError}</p>}
+                  <button type="submit" disabled={!adminEmail.trim() || !adminPassword} className="w-full py-4 bg-brand-primary text-white rounded-2xl font-black shadow-lg shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50">로그인</button>
                 </div>
-              </div>
+              </form>
             </motion.div>
           </div>
         )}

@@ -4,9 +4,9 @@ export default defineConfig({
   appName: 'myfirstinfantcare',
   outdir: 'dist',
   brand: {
-    displayName: 'ChildInfo',
+    displayName: '초보아빠화이팅',
     primaryColor: '#F04452',
-    icon: './public/logo.png',
+    icon: 'https://static.toss.im/appsintoss/42797/93c7e93e-b85f-4982-bcb0-01a9a06ba64d.png',
   },
   permissions: [
     { name: 'geolocation', access: 'access' },

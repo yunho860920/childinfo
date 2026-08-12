@@ -7,6 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>ChildInfo | 우리 아이 성장 정보 및 맞춤 가이드</title>
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6162648421292997"
+         crossorigin="anonymous"></script>
     <!-- Pretendard Font -->
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
     <style>
@@ -78,42 +81,12 @@
           Safari를 최신 버전으로 업데이트하거나,<br>
           인터넷 연결을 확인한 후 다시 시도해 주세요.
         </div>
-        <button class="retry-btn" id="retry-btn" onclick="window.location.reload()">
+        <button class="retry-btn" id="retry-btn" type="button">
           다시 시도
         </button>
       </div>
     </div>
-    <script>
-      // Timeout: React가 10초 내에 마운트되지 않으면 에러 UI 표시
-      window.__rootTimeout = setTimeout(function() {
-        var el = document.getElementById('root-fallback');
-        if (el) {
-          var errEl = document.getElementById('load-error');
-          var btnEl = document.getElementById('retry-btn');
-          var spinEl = el.querySelector('.spinner');
-          if (errEl) errEl.style.display = 'block';
-          if (btnEl) btnEl.style.display = 'inline-block';
-          if (spinEl) spinEl.style.display = 'none';
-        }
-      }, 10000);
-      // Global error handler: JS 크래시 즉시 감지
-      window.onerror = function(msg, src, line, col, err) {
-        console.error('Global error caught:', msg, src, line, col, err);
-        clearTimeout(window.__rootTimeout);
-        var el = document.getElementById('root-fallback');
-        if (el) {
-          var errEl = document.getElementById('load-error');
-          var btnEl = document.getElementById('retry-btn');
-          var spinEl = el.querySelector('.spinner');
-          if (errEl) {
-            errEl.style.display = 'block';
-            errEl.innerHTML = '앱 로딩 중 오류가 발생했습니다.<br>페이지를 새로고침해 주세요.<br><small style="opacity:0.5;word-break:break-all">' + (msg || 'Unknown Error') + '</small>';
-          }
-          if (btnEl) btnEl.style.display = 'inline-block';
-          if (spinEl) spinEl.style.display = 'none';
-        }
-      };
-    </script>
+    <script src="/root-fallback.js"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

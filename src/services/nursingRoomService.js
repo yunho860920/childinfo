@@ -10,27 +10,20 @@ import { parseAggressiveRegion, isValidDong } from '../utils/regionUtils';
  * 3. 에러 핸들링 및 타임아웃 처리
  */
 
-const NURSING_API_URL = '/api-nursing/api/nursingRoomJSON.do';
+const NURSING_API_URL = '/api/nursing-rooms';
 
 /**
  * 전국 유아휴게소 데이터를 가져와 앱 표준 포맷으로 변환합니다.
  * @param {string} apiKey - 수유정보 알리미 발급 인증키
  * @returns {Promise<Array>} 정규화된 시설 데이터 리스트
  */
-export async function fetchNursingRoomsFromApi(apiKey) {
-  if (!apiKey) {
-    console.warn('Nursing API Key is missing. Skipping API fetch.');
-    return [];
-  }
-
+export async function fetchNursingRoomsFromApi() {
   try {
     // 1. API 호출 (타임아웃 10초 설정)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    // sooyusil.com API 스펙: confirmApiKey 파라미터 사용
-    const fetchUrl = `${NURSING_API_URL}?confirmApiKey=${encodeURIComponent(apiKey)}`;
-    console.log('Fetching Nursing Rooms from:', fetchUrl);
+    const fetchUrl = NURSING_API_URL;
     
     const response = await fetch(fetchUrl, {
       signal: controller.signal

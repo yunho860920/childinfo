@@ -6,7 +6,13 @@
   "scripts": {
     "dev": "vite",
     "guard:data": "node scripts/data-guard.mjs",
-    "build": "npm run guard:data && vite build",
+    "guard:facilities": "node scripts/facilities/check-v2.mjs",
+    "facilities:audit": "node scripts/facilities/audit-legacy.mjs --write",
+    "facilities:import:childcare": "node scripts/facilities/import-childcare.mjs",
+    "facilities:import": "node scripts/facilities/import-public-source.mjs",
+    "facilities:sync:keyless": "node scripts/facilities/sync-keyless-standard.mjs",
+    "facilities:sync:files": "node scripts/facilities/sync-file-sources.mjs",
+    "build": "npm run guard:data && npm run guard:facilities && vite build",
     "preview": "vite preview",
     "ait:build": "npx ait build",
     "ait:deploy": "npx ait deploy"
@@ -15,7 +21,6 @@
     "@apps-in-toss/web-framework": "^2.5.1",
     "@supabase/supabase-js": "^2.103.0",
     "clsx": "^2.1.0",
-    "crypto-js": "^4.2.0",
     "framer-motion": "^11.0.8",
     "lucide-react": "^0.363.0",
     "react": "^18.2.0",
