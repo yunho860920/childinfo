@@ -225,6 +225,7 @@ assert.equal(nursingRoom.attributes.fatherAllowed, true);
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const snapshotDirectory = path.join(root, 'data', 'facilities-v2');
+const runtimePath = path.join(root, 'public', 'data', 'facilities-v2.json');
 const snapshotFiles = fs.readdirSync(snapshotDirectory)
   .filter((name) => name.endsWith('.snapshot.json'))
   .sort();
@@ -256,5 +257,12 @@ assert.deepEqual(
   [],
   'V2 facility snapshots do not cover all 17 regions.'
 );
+
+assert.ok(fs.existsSync(runtimePath), 'Facility V2 runtime dataset was not generated.');
+const runtime = JSON.parse(fs.readFileSync(runtimePath, 'utf8'));
+assert.equal(runtime.schemaVersion, 2, 'Facility V2 runtime schema is invalid.');
+assert.equal(runtime.records?.length, runtime.counts?.records, 'Facility V2 runtime count mismatch.');
+assert.ok(runtime.records.some((record) => record.type === FACILITY_CATEGORIES.MEDICAL), 'Medical facilities are missing from the runtime dataset.');
+assert.ok(runtime.records.every((record) => record.status !== 'inactive' && record.status !== 'review_required'), 'Blocked facility statuses leaked into the runtime dataset.');
 
 console.log(`[facility-v2] schema, adapters and ${snapshotFiles.length} snapshots (${snapshotRecordCount} records, 17 regions) passed.`);

@@ -19,6 +19,7 @@ scratch-vsix/
 # Local safety archives created before facility-data migrations.
 backups/
 data/facilities-v2/rollback/
+public/data/facilities-v2.json
 
 .granite
 

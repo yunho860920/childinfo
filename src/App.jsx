@@ -344,12 +344,13 @@ function App() {
   }, [welfareRegion, welfareSubRegion]);
 
   React.useEffect(() => {
+    if (!['facilities', 'consult'].includes(activeTab) || facilities.length > 0) return;
     const loadFacilities = async () => {
       const data = await fetchChildFacilities();
       setFacilities(data);
     };
     loadFacilities();
-  }, []);
+  }, [activeTab, facilities.length]);
 
   // --- Handlers ---
   const handleBirthDateChange = (date) => {

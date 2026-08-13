@@ -19,6 +19,7 @@ scratch-vsix/
 skills/
 myfirstinfantcare.ait
 data/facilities-v2/rollback/
+public/data/facilities-v2.json
 
 # Images originals
 public/Originals/

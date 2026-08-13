@@ -19,7 +19,7 @@ import { jejuInfra } from '../data/infrastructure/jeju/index';
 import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
 import { nursingRoomsInfra } from '../data/infrastructure/nursing_rooms';
 import { fetchNursingRoomsFromApi } from './nursingRoomService';
-import { parseAggressiveRegion } from '../utils/regionUtils';
+import { normalizeRegionName, parseAggressiveRegion } from '../utils/regionUtils';
 
 // System Database: High-density verified data
 const SYSTEM_DATABASE = [
@@ -46,6 +46,36 @@ const SYSTEM_DATABASE = [
 
 const FACILITY_SNAPSHOT_KEY = 'childinfo_facilities_snapshot';
 const MIN_EXPECTED_FACILITIES = 100;
+const FACILITY_V2_URL = '/data/facilities-v2.json';
+
+function normalizeFacilityForUi(facility) {
+  const parsed = parseAggressiveRegion(facility.address || '', facility.name || '');
+  const region = normalizeRegionName(facility.region || parsed.region);
+  return {
+    ...facility,
+    type: mapFacilityType(facility.type || facility.category || '', facility.name || ''),
+    region,
+    subRegion: facility.subRegion || parsed.subRegion || '전체',
+    dong: facility.dong || parsed.dong || '전체',
+    address: facility.address || '',
+    lat: facility.lat ?? facility.latitude ?? null,
+    lng: facility.lng ?? facility.longitude ?? null
+  };
+}
+
+async function fetchV2Facilities() {
+  const response = await fetch(FACILITY_V2_URL, {
+    cache: 'no-cache',
+    signal: AbortSignal.timeout(20000)
+  });
+  if (!response.ok) throw new Error(`Facility V2 request failed: ${response.status}`);
+  const payload = await response.json();
+  if (payload?.schemaVersion !== 2 || !Array.isArray(payload.records)
+    || payload.records.length < MIN_EXPECTED_FACILITIES) {
+    throw new Error('Facility V2 payload is incomplete.');
+  }
+  return payload.records.map(normalizeFacilityForUi);
+}
 
 function loadFacilitySnapshot() {
   try {
@@ -89,6 +119,12 @@ const SIGGUNGU_DICT = {
 };
 
 export async function fetchChildFacilities() {
+  try {
+    return await fetchV2Facilities();
+  } catch (error) {
+    console.warn('Facility V2 unavailable; using the legacy fallback.', error);
+  }
+
   let apiFacilities = [];
 
   {
@@ -145,10 +181,7 @@ export async function fetchChildFacilities() {
   }
 
   // Normalize System Database types to match UI categories
-  const normalizedSystem = SYSTEM_DATABASE.map(fac => ({
-    ...fac,
-    type: mapFacilityType(fac.type || '', fac.name)
-  }));
+  const normalizedSystem = SYSTEM_DATABASE.map(normalizeFacilityForUi);
 
   const allData = [...normalizedSystem, ...apiFacilities, ...apiNursingRooms];
   const seenNames = new Set();
@@ -215,17 +248,19 @@ function normalizeCategory(typeStr, nameStr) {
 export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
   if (!facilities || !Array.isArray(facilities)) return [];
   
+  const normalizedRegion = region === '전체' ? '전체' : normalizeRegionName(region);
   return facilities.filter(f => {
     // 1. Precise Category Normalization
     const facilityCat = normalizeCategory(f.type || '', f.name || '');
     const matchCategory = category === '전체' || facilityCat === category;
 
     // 2. Geographic Filtering (Region/SubRegion)
-    const matchRegion = region === '전체' || f.region === region;
+    const matchRegion = normalizedRegion === '전체' || normalizeRegionName(f.region) === normalizedRegion;
     const matchSub = subRegion === '전체' || f.subRegion === subRegion;
     // Fix: If a specific dong is selected, show facilities belonging to that dong.
     // If a facility has '전체' dong, it only matches if the filter is '전체' OR if the name/address contains the dong.
-    const matchDong = !dong || dong === '전체' || f.dong === dong || (f.dong === '전체' && (f.name.includes(dong) || f.address.includes(dong)));
+    const matchDong = !dong || dong === '전체' || f.dong === dong
+      || (f.dong === '전체' && ((f.name || '').includes(dong) || (f.address || '').includes(dong)));
     
     // 3. Search Query (Name/Address/Category)
     const lowerQuery = (query || "").toLowerCase();

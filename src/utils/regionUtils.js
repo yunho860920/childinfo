@@ -13,6 +13,38 @@ const MANUAL_DONG_CORRECTIONS = {
   '보라매공원': '신대방동'
 };
 
+const REGION_ALIASES = new Map([
+  ['서울', '서울'], ['서울시', '서울'], ['서울특별시', '서울'],
+  ['경기', '경기'], ['경기도', '경기'],
+  ['인천', '인천'], ['인천시', '인천'], ['인천광역시', '인천'],
+  ['부산', '부산'], ['부산시', '부산'], ['부산광역시', '부산'],
+  ['대구', '대구'], ['대구시', '대구'], ['대구광역시', '대구'],
+  ['대전', '대전'], ['대전시', '대전'], ['대전광역시', '대전'],
+  ['광주', '광주'], ['광주시', '광주'], ['광주광역시', '광주'],
+  ['울산', '울산'], ['울산시', '울산'], ['울산광역시', '울산'],
+  ['세종', '세종'], ['세종시', '세종'], ['세종특별자치시', '세종'],
+  ['강원', '강원'], ['강원도', '강원'], ['강원특별자치도', '강원'],
+  ['충북', '충북'], ['충청북도', '충북'],
+  ['충남', '충남'], ['충청남도', '충남'],
+  ['전북', '전북'], ['전라북도', '전북'], ['전북특별자치도', '전북'],
+  ['전남', '전남'], ['전라남도', '전남'],
+  ['경북', '경북'], ['경상북도', '경북'],
+  ['경남', '경남'], ['경상남도', '경남'],
+  ['제주', '제주'], ['제주도', '제주'], ['제주특별자치도', '제주']
+]);
+
+export function normalizeRegionName(value) {
+  const cleaned = String(value || '').replace(/[()]/g, '').trim();
+  if (!cleaned) return '기타';
+  if (REGION_ALIASES.has(cleaned)) return REGION_ALIASES.get(cleaned);
+  const firstToken = cleaned.split(/\s+/)[0];
+  if (REGION_ALIASES.has(firstToken)) return REGION_ALIASES.get(firstToken);
+  for (const [alias, canonical] of REGION_ALIASES) {
+    if (cleaned.startsWith(alias)) return canonical;
+  }
+  return '기타';
+}
+
 export function parseAggressiveRegion(addrStr, facName = "") {
   // 수동 보정 데이터 확인
   for (const [key, value] of Object.entries(MANUAL_DONG_CORRECTIONS)) {
@@ -35,13 +67,7 @@ function parseAggressiveRegionBase(addrStr, facName = "") {
     const first = parts[0];
     
     // 주요 광역시/도 매핑 (간략화된 SIGGUNGU_DICT logic)
-    const regions = ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
-    for (const r of regions) {
-      if (first.includes(r)) {
-        region = r;
-        break;
-      }
-    }
+    region = normalizeRegionName(first);
     
     // 시/군/구 추출
     if (parts.length >= 2) {
@@ -109,4 +135,3 @@ export function isValidDong(name) {
   const p = name.replace(/[()]/g, '').trim();
   return (p.endsWith('동') || p.endsWith('읍') || p.endsWith('면')) && !p.endsWith('로') && !p.endsWith('길') && p.length > 1;
 }
-

@@ -14,14 +14,14 @@
       "sourceId": "childcare-info-portal",
       "name": "한국사회보장정보원 어린이집별 기본정보",
       "url": "https://www.data.go.kr/data/15101154/openapi.do",
-      "status": "adapter-ready-key-required"
+      "status": "blocked-service-key-required"
     },
     {
       "category": "놀이·체험",
       "sourceId": "visit-korea-tour-api",
       "name": "한국관광공사 국문 관광정보 서비스",
       "url": "https://www.data.go.kr/data/15101578/openapi.do",
-      "status": "adapter-ready-key-required"
+      "status": "blocked-api-approval-required"
     },
     {
       "category": "놀이·체험",
@@ -98,14 +98,14 @@
       "sourceId": "sooyusil",
       "name": "수유정보 알리미",
       "url": "https://www.sooyusil.com/home",
-      "status": "adapter-ready-existing-key-required"
+      "status": "keyed-sync-ready"
     },
     {
       "category": "병원·상담",
       "sourceId": "hira",
       "name": "건강보험심사평가원 병원정보서비스",
       "url": "https://www.data.go.kr/data/15001698/openapi.do",
-      "status": "adapter-ready-key-required"
+      "status": "blocked-api-approval-required"
     }
   ]
 }

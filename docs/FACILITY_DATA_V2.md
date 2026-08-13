@@ -17,6 +17,7 @@ npm run facilities:audit
 npm run guard:facilities
 npm run facilities:sync:keyless
 npm run facilities:sync:files
+npm run facilities:sync:keyed -- nursing-rooms
 npm run facilities:import:childcare -- path/to/childcare.json
 npm run facilities:import -- city-parks path/to/parks.json
 ```
@@ -28,3 +29,7 @@ npm run facilities:import -- city-parks path/to/parks.json
 공공데이터포털 기반 원천은 서버 전용 `PUBLIC_DATA_API_KEY`를 사용한다. 브라우저에 노출되는 `VITE_` 접두사 키를 새 수집기에 사용하지 않는다. `/api/facility-sources-v2?source=community-child-centers&pageNo=1&numOfRows=100`처럼 승인된 원천만 프록시하며 임의 URL 전달은 허용하지 않는다.
 
 공공데이터포털의 키 없는 표준데이터 7종은 `facilities:sync:keyless`로, 최신 CSV 파일데이터 3종(공동육아나눔터·가족상담 우수기관·청소년상담복지센터)은 `facilities:sync:files`로 갱신한다. CSV 수집기는 UTF-8과 EUC-KR을 감지하며 기존 스냅샷은 `data/facilities-v2/rollback`에 로컬 보존한다.
+
+승인키 기반 원천은 `facilities:sync:keyed -- nursing-rooms`, `facilities:sync:keyed -- hira-pediatrics`, `facilities:sync:keyed -- tour-api`처럼 원천을 명시해 갱신한다. 키는 각각 서버 전용 `NURSING_API_KEY`, `PUBLIC_DATA_API_KEY`에서만 읽는다.
+
+2026-08-12 기준 수유정보 알리미는 3,046건 수집에 성공했다. 현재 공공데이터 키는 HIRA 병원정보서비스와 TourAPI 서비스 권한이 없어 두 원천 모두 403이며 각 활용신청 승인 후 다시 실행해야 한다. 어린이집정보공개포털도 별도 개발계정·인증키가 필요하다.
