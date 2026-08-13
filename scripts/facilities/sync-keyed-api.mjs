@@ -29,7 +29,8 @@ const KEYED_SOURCES = Object.freeze({
     sourceName: '건강보험심사평가원 소아청소년과 병원정보',
     sourceUrl: 'https://www.data.go.kr/data/15001698/openapi.do',
     apiUrl: 'https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList',
-    envName: 'PUBLIC_DATA_API_KEY',
+    envName: 'HIRA_API_KEY',
+    fallbackEnvName: 'PUBLIC_DATA_API_KEY',
     keyParam: 'ServiceKey',
     paginated: true,
     defaults: { dgsbjtCd: '11', _type: 'json' }
@@ -39,7 +40,8 @@ const KEYED_SOURCES = Object.freeze({
     sourceName: '한국관광공사 국문 관광정보 서비스',
     sourceUrl: 'https://www.data.go.kr/data/15101578/openapi.do',
     apiUrl: 'https://apis.data.go.kr/B551011/KorService2/areaBasedList2',
-    envName: 'PUBLIC_DATA_API_KEY',
+    envName: 'TOUR_API_KEY',
+    fallbackEnvName: 'PUBLIC_DATA_API_KEY',
     keyParam: 'serviceKey',
     paginated: true,
     defaults: { MobileOS: 'ETC', MobileApp: 'Childinfo', _type: 'json', arrange: 'A' }
@@ -139,7 +141,7 @@ function totalCount(payload, fallback) {
 }
 
 async function fetchSourceRows(sourceId, config) {
-  const key = decodedKey(process.env[config.envName] || '');
+  const key = decodedKey(process.env[config.envName] || process.env[config.fallbackEnvName] || '');
   if (!key) throw new Error(`${config.envName} is not configured.`);
 
   if (!config.paginated) {
@@ -208,10 +210,17 @@ async function syncSource(sourceId) {
   const sourceRows = await fetchSourceRows(sourceId, config);
   const includedRows = adapter.include ? sourceRows.filter(adapter.include) : sourceRows;
   const normalized = includedRows.map((row) => adapter.normalize(row, { collectedAt }));
-  const invalid = normalized
-    .map((record) => ({ id: record.id, errors: validateFacilityRecord(record) }))
-    .filter((result) => result.errors.length > 0);
-  const { records, duplicates } = dedupeFacilities(normalized);
+  const validationResults = normalized.map((record) => ({
+    record,
+    errors: validateFacilityRecord(record)
+  }));
+  const invalid = validationResults
+    .filter((result) => result.errors.length > 0)
+    .map(({ record, errors }) => ({ id: record.id, errors }));
+  const validRecords = validationResults
+    .filter((result) => result.errors.length === 0)
+    .map((result) => result.record);
+  const { records, duplicates } = dedupeFacilities(validRecords);
   const reviewRequired = records.filter((record) => record.status === 'review_required').length;
   if (invalid.length > Math.max(5, Math.ceil(normalized.length * 0.05))) {
     throw new Error(`${sourceId}: ${invalid.length}/${normalized.length} records failed validation.`);

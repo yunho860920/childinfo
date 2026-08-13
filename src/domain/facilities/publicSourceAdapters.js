@@ -39,13 +39,18 @@ function sourceOptions(source, sourceId, sourceUrl, row, options = {}) {
 
 export function normalizeTourRecord(row, options = {}) {
   const sourceId = pick(row, 'contentid', 'contentId', '콘텐츠ID');
+  const address = [pick(row, 'addr1', '주소'), pick(row, 'addr2', '상세주소')]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/^닫기\s+/, '')
+    .trim();
   return normalizeFacility({
     id: sourceId,
     name: pick(row, 'title', '관광지명', '시설명'),
     category: FACILITY_CATEGORIES.PLAY,
     subtype: 'tour-experience',
     status: '운영',
-    address: [pick(row, 'addr1', '주소'), pick(row, 'addr2', '상세주소')].filter(Boolean).join(' '),
+    address,
     phone: pick(row, 'tel', '전화번호'),
     homepage: pick(row, 'homepage', '홈페이지'),
     latitude: pick(row, 'mapy', '위도'),
@@ -56,6 +61,11 @@ export function normalizeTourRecord(row, options = {}) {
       category1: pick(row, 'cat1'),
       category2: pick(row, 'cat2'),
       category3: pick(row, 'cat3'),
+      legalRegionCode: pick(row, 'lDongRegnCd'),
+      legalDistrictCode: pick(row, 'lDongSignguCd'),
+      classification1: pick(row, 'lclsSystm1'),
+      classification2: pick(row, 'lclsSystm2'),
+      classification3: pick(row, 'lclsSystm3'),
       image: pick(row, 'firstimage', 'firstImage')
     }
   }, sourceOptions(FACILITY_SOURCES.TOUR_API, sourceId, SOURCE_URLS.tour, row, options));

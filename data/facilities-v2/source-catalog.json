@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "createdAt": "2026-08-11",
-  "updatedAt": "2026-08-12",
+  "updatedAt": "2026-08-13",
   "policy": {
     "replaceLegacyInPlace": false,
     "deleteClosedFacilities": false,
@@ -21,7 +21,7 @@
       "sourceId": "visit-korea-tour-api",
       "name": "한국관광공사 국문 관광정보 서비스",
       "url": "https://www.data.go.kr/data/15101578/openapi.do",
-      "status": "blocked-api-approval-required"
+      "status": "keyed-sync-ready"
     },
     {
       "category": "놀이·체험",

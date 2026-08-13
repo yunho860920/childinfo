@@ -2,16 +2,19 @@ const SOURCE_CONFIG = Object.freeze({
   'community-child-centers': {
     url: 'https://api.data.go.kr/openapi/tn_pubr_public_local_child_center_api',
     keyParam: 'serviceKey',
-    defaults: { type: 'json' }
+    defaults: { type: 'json' },
+    envName: 'BW_API_KEY'
   },
   'city-parks': {
     url: 'https://api.data.go.kr/openapi/tn_pubr_public_cty_park_info_api',
     keyParam: 'serviceKey',
-    defaults: { type: 'json' }
+    defaults: { type: 'json' },
+    envName: 'BW_API_KEY'
   },
   'tour-api': {
     url: 'https://apis.data.go.kr/B551011/KorService2/areaBasedList2',
     keyParam: 'serviceKey',
+    envName: 'TOUR_API_KEY',
     defaults: {
       MobileOS: 'ETC',
       MobileApp: 'Childinfo',
@@ -22,7 +25,8 @@ const SOURCE_CONFIG = Object.freeze({
   'hira-pediatrics': {
     url: 'https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList',
     keyParam: 'ServiceKey',
-    defaults: { dgsbjtCd: '11' }
+    defaults: { dgsbjtCd: '11' },
+    envName: 'HIRA_API_KEY'
   }
 });
 
@@ -46,7 +50,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const serviceKey = process.env.PUBLIC_DATA_API_KEY || process.env.BW_API_KEY;
+  const serviceKey = process.env[config.envName];
   if (!serviceKey) {
     return res.status(503).json({ error: 'public_data_api_not_configured' });
   }
