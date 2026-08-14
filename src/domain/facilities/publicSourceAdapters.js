@@ -72,6 +72,11 @@ export function normalizeTourRecord(row, options = {}) {
 }
 
 export function isFamilyPlayTourRecord(row) {
+  const contentTypeId = String(pick(row, 'contenttypeid', 'contentTypeId') || '');
+  // 숙박(32)·쇼핑(38)·음식점(39)은 제목에 공원/가족 같은 단어가 있어도
+  // 아이와 가볼 놀이·체험 시설로 분류하지 않는다.
+  if (['32', '38', '39'].includes(contentTypeId)) return false;
+
   const text = [
     pick(row, 'title', '관광지명', '시설명'),
     pick(row, 'overview', '개요'),

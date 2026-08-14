@@ -249,6 +249,10 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
   if (!facilities || !Array.isArray(facilities)) return [];
   
   const normalizedRegion = region === '전체' ? '전체' : normalizeRegionName(region);
+  const normalizedQuery = (query || '').toLowerCase().trim();
+  const hasExactFacilityName = normalizedQuery
+    ? facilities.some((facility) => String(facility.name || '').toLowerCase() === normalizedQuery)
+    : false;
   return facilities.filter(f => {
     // 1. Precise Category Normalization
     const facilityCat = normalizeCategory(f.type || '', f.name || '');
@@ -263,11 +267,28 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
       || (f.dong === '전체' && ((f.name || '').includes(dong) || (f.address || '').includes(dong)));
     
     // 3. Search Query (Name/Address/Category)
-    const lowerQuery = (query || "").toLowerCase();
+    const lowerQuery = normalizedQuery;
+    const subtype = String(f.subtype || '').toLowerCase();
+    const semanticMatch = !lowerQuery || (!hasExactFacilityName && (
+      (/(소아과|소아청소년과)/.test(lowerQuery)
+        && (f.source === 'hira' || subtype === 'pediatrics'))
+      || (/(수유실|유아휴게소|모유수유)/.test(lowerQuery)
+        && (f.source === 'sooyusil' || subtype.includes('nursing') || facilityCat === CAT_NURSING))
+      || (/(병원|의원|의료원|클리닉)/.test(lowerQuery)
+        && (['hira', 'e-gen'].includes(f.source)
+          || /pediatrics|emergency/.test(subtype)
+          || /병원|의원|의료원|클리닉/.test(f.name || '')))
+      || (/(상담|심리|정신건강|발달)/.test(lowerQuery)
+        && (/counseling|mental-health|developmental/.test(subtype)
+          || /상담|심리|정신건강|발달/.test(`${f.name || ''} ${f.type || ''}`)))
+      || (/(가볼\s*곳|가볼\s*만한\s*곳|갈\s*만한|놀이|체험)/.test(lowerQuery)
+        && facilityCat === CAT_PLAY)
+    ));
     const matchQuery = !query || 
       (f.name || "").toLowerCase().includes(lowerQuery) || 
       (f.address || "").toLowerCase().includes(lowerQuery) ||
-      (facilityCat).toLowerCase().includes(lowerQuery);
+      (facilityCat).toLowerCase().includes(lowerQuery) ||
+      semanticMatch;
       
     return matchRegion && matchSub && matchDong && matchCategory && matchQuery;
   });

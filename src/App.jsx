@@ -154,6 +154,7 @@ function App() {
   const [welfareLocationMsg, setWelfareLocationMsg] = React.useState(null);
 
   const [facilities, setFacilities] = React.useState([]);
+  const facilityLoadPromiseRef = React.useRef(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [facilityPage, setFacilityPage] = React.useState(1);
   const [selectedRegion, setSelectedRegion] = React.useState('전체');
@@ -343,14 +344,25 @@ function App() {
     loadWelfare();
   }, [welfareRegion, welfareSubRegion]);
 
+  const ensureFacilities = React.useCallback(async () => {
+    if (facilities.length > 0) return facilities;
+    if (!facilityLoadPromiseRef.current) {
+      facilityLoadPromiseRef.current = fetchChildFacilities()
+        .then((data) => {
+          setFacilities(data);
+          return data;
+        })
+        .finally(() => {
+          facilityLoadPromiseRef.current = null;
+        });
+    }
+    return facilityLoadPromiseRef.current;
+  }, [facilities]);
+
   React.useEffect(() => {
     if (!['facilities', 'consult'].includes(activeTab) || facilities.length > 0) return;
-    const loadFacilities = async () => {
-      const data = await fetchChildFacilities();
-      setFacilities(data);
-    };
-    loadFacilities();
-  }, [activeTab, facilities.length]);
+    ensureFacilities();
+  }, [activeTab, ensureFacilities, facilities.length]);
 
   // --- Handlers ---
   const handleBirthDateChange = (date) => {
@@ -528,8 +540,14 @@ function App() {
 
     if (action.tab === 'facilities') {
       setSearchQuery(action.query || '');
-      if (action.region) setSelectedRegion(action.region);
-      if (action.subRegion) setSelectedSubRegion(action.subRegion);
+      setSelectedFacilityCategory(action.category || '전체');
+      if (action.region) {
+        setSelectedRegion(action.region);
+        setSelectedSubRegion(action.subRegion || '전체');
+        setSelectedDong('전체');
+      } else if (action.subRegion) {
+        setSelectedSubRegion(action.subRegion);
+      }
       setFacilityPage(1);
     }
 
@@ -822,6 +840,7 @@ function App() {
               growthRecords={growthRecords}
               tempRecords={tempRecords}
               feedingRecords={feedingRecords}
+              ensureFacilities={ensureFacilities}
               onNavigate={handleAiGuideNavigate}
             />
           )}

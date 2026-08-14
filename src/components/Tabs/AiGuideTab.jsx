@@ -27,6 +27,8 @@ const QUICK_QUESTIONS = [
   '3개월 아기 수유량을 알려줘'
 ];
 
+const NEEDS_FACILITY_DATA = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|유아휴게소|어린이집|육아종합지원센터|가족센터|돌봄센터|시설|가볼\s*곳|가볼\s*만한\s*곳|갈\s*만한|놀러|나들이|체험)/;
+
 const createMessageId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const AiGuideTab = ({
@@ -38,6 +40,7 @@ const AiGuideTab = ({
   growthRecords = [],
   tempRecords = [],
   feedingRecords = [],
+  ensureFacilities,
   onNavigate
 }) => {
   const [messages, setMessages] = React.useState([WELCOME_MESSAGE]);
@@ -90,12 +93,15 @@ const AiGuideTab = ({
     setIsLoading(true);
 
     try {
+      const resolvedFacilities = facilities.length === 0 && NEEDS_FACILITY_DATA.test(text) && ensureFacilities
+        ? await ensureFacilities()
+        : facilities;
       const result = await askAiGuide({
         message: text,
         history,
         pendingIntent: options.pendingIntent || pendingIntent,
         childInfo,
-        facilities,
+        facilities: resolvedFacilities,
         places,
         welfareItems,
         completedVaccines,
@@ -202,7 +208,7 @@ const AiGuideTab = ({
           </div>
           <h3 className="text-2xl font-black tracking-tight text-brand-gray-900 dark:text-white">AI 정보 도우미</h3>
           <p className="mt-1 text-[13px] font-medium text-brand-gray-500 dark:text-brand-gray-400">
-            홈페이지 기능은 무제한으로 찾고, 부족한 내용은 하루 3회 AI가 보완합니다.
+            홈페이지 기능은 무제한으로 찾고, 부족한 내용은 이 기기에서 하루 3회 AI가 보완합니다.
           </p>
         </div>
         <button

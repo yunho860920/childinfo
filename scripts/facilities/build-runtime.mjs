@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const snapshotDirectory = path.join(root, 'data', 'facilities-v2');
 const outputPath = path.join(root, 'public', 'data', 'facilities-v2.json');
 const allowedStatuses = new Set(['active', 'unknown', 'paused']);
+const excludedTourContentTypes = new Set(['32', '38', '39']);
 
 function increment(target, key) {
   target[key] = (target[key] || 0) + 1;
@@ -44,12 +45,18 @@ const sourceCollectedAt = snapshots
   .sort()
   .at(-1) || null;
 const excludedByStatus = {};
+const excludedByContentType = {};
 const byCategory = {};
 const bySource = {};
 const records = [];
 
 for (const snapshot of snapshots) {
   for (const record of snapshot.records || []) {
+    const contentTypeId = String(record.attributes?.contentTypeId || '');
+    if (record.source === 'visit-korea-tour-api' && excludedTourContentTypes.has(contentTypeId)) {
+      increment(excludedByContentType, contentTypeId);
+      continue;
+    }
     if (!allowedStatuses.has(record.status)) {
       increment(excludedByStatus, record.status || 'missing');
       continue;
@@ -75,7 +82,8 @@ const payload = {
     records: records.length,
     byCategory,
     bySource,
-    excludedByStatus
+    excludedByStatus,
+    excludedByContentType
   },
   records
 };

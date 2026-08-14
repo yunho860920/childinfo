@@ -22,8 +22,8 @@ const REGION_DEFINITIONS = [
   { id: 'jeju', label: '제주', aliases: ['제주', '제주도', '제주특별자치도'] }
 ];
 
-const PLACE_INTENT = /(놀러|나들이|가볼\s*곳|갈\s*만한|외출|아이와\s*갈|아기와\s*갈|장소\s*추천|어디(?:에|로)?\s*(?:갈|놀))/;
-const FACILITY_INTENT = /(소아과|소아청소년과|병원|응급실|수유실|어린이집|육아종합지원센터|가족센터|유아휴게소|돌봄센터|시설)/;
+const PLACE_INTENT = /(놀러|나들이|가\s*볼\s*만\s*한\s*곳|가볼\s*만한\s*곳|가볼\s*곳|갈\s*만한|외출|(?:아이|아기|아동|어린이)(?:와|랑|과)\s*(?:갈|가볼|놀|체험)|장소\s*추천|체험(?:시설|장소)?\s*추천|어디(?:에|로)?\s*(?:갈|놀))/;
+const FACILITY_INTENT = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|어린이집|육아종합지원센터|가족센터|유아휴게소|돌봄센터|놀이시설|체험시설|시설)/;
 const WELFARE_INTENT = /(복지|혜택|지원금|수당|바우처|부모급여|첫만남이용권|육아휴직|보육료)/;
 const VACCINE_INTENT = /(예방접종|접종|백신)/;
 const LOCATION_WORDS = /(근처|주변|가까운|내\s*위치|현재\s*위치|우리\s*동네)/;
@@ -66,17 +66,26 @@ const getAllPlaces = (places = {}) => Object.entries(places).flatMap(([regionId,
   }));
 });
 
-const findMentionedSubRegion = (message, entries) => {
+const findMentionedSubRegion = (message, entries, region) => {
   const known = new Set();
   entries.forEach((entry) => {
     if (entry?.subRegion && entry.subRegion !== '전체') known.add(entry.subRegion);
-    const addressMatches = String(entry?.address || '').match(/[가-힣]{1,10}(?:시|군|구)/g) || [];
-    addressMatches.forEach((value) => known.add(value));
+    String(entry?.address || '')
+      .split(/[\s,()]+/)
+      .map((value) => value.replace(/[^가-힣]/g, ''))
+      .filter((value) => value.length >= 2 && /(?:시|군|구)$/.test(value))
+      .forEach((value) => known.add(value));
   });
 
   return [...known]
+    .filter((value) => !region?.aliases.includes(value))
     .sort((a, b) => b.length - a.length)
-    .find((value) => message.includes(value) || message.includes(value.replace(/(?:시|군|구)$/, ''))) || '';
+    .find((value) => {
+      if (message.includes(value)) return true;
+      const shortened = value.replace(/(?:시|군|구)$/, '');
+      if (shortened.length < 2 || region?.aliases.includes(shortened)) return false;
+      return message.includes(shortened);
+    }) || '';
 };
 
 const distanceKm = (from, to) => {
@@ -97,28 +106,113 @@ const formatDistance = (kilometers) => {
   return `${kilometers.toFixed(kilometers < 10 ? 1 : 0)}km`;
 };
 
+const SOURCE_LABELS = {
+  hira: '건강보험심사평가원',
+  sooyusil: '수유시설 정보',
+  'visit-korea-tour-api': '한국관광공사 TourAPI',
+  'data-go-kr': '공공데이터'
+};
+
+const getSourceLabel = (source) => SOURCE_LABELS[source] || '홈페이지 등록 정보';
+
 const makePlaceItem = (place, distance) => ({
   kind: 'place',
   title: `${place.emoji || '📍'} ${place.name}`,
   subtitle: [formatDistance(distance), place.category].filter(Boolean).join(' · '),
-  detail: place.notes || '',
-  meta: place.babyRoom ? `아기 편의시설: ${place.babyRoom}` : '',
-  action: {
-    tab: 'stamps',
-    label: '가볼 곳에서 보기',
-    region: place.regionId,
-    spotId: place.id
-  }
+  detail: [place.notes, place.address].filter(Boolean).join('\n'),
+  meta: place.babyRoom
+    ? `아기 편의시설: ${place.babyRoom}`
+    : place.source
+      ? `출처: ${getSourceLabel(place.source)}`
+      : '',
+  action: place.isFacilityRecord
+    ? {
+        tab: 'facilities',
+        label: '시설에서 보기',
+        query: place.name,
+        category: '놀이·체험',
+        region: place.regionLabel,
+        subRegion: place.subRegion
+      }
+    : {
+        tab: 'stamps',
+        label: '가볼 곳에서 보기',
+        region: place.regionId,
+        spotId: place.id
+      }
 });
 
-const resolvePlaces = ({ message, places, location }) => {
-  const allPlaces = getAllPlaces(places);
+const getRequestedAgeLabel = (message, fallbackMonths) => {
+  const yearMatch = message.match(/(\d{1,2})\s*(?:살|세)/);
+  if (yearMatch) return `${Number(yearMatch[1])}세 아이와`;
+
+  const monthMatch = message.match(/(\d{1,3})\s*개월/);
+  if (monthMatch) return `${Number(monthMatch[1])}개월 아이와`;
+
+  const months = Number(fallbackMonths);
+  return Number.isFinite(months) && months > 0 ? `${months}개월 아이와` : '아이와';
+};
+
+const CHILD_FRIENDLY_PLACE = /(어린이|유아|아동|키즈|상상나라|체험|과학관|박물관|도서관|동물원|수족관|아쿠아리움|식물원|수목원|놀이터|공원|숲)/;
+const LOW_VALUE_PLACE = /(스토어|매장|백화점|면세점|식당|레스토랑|카페|주점|골프|축제|행사)/;
+
+const getPlaceRelevanceScore = (place, requestedMonths) => {
+  const name = String(place.name || '');
+  const details = `${name} ${place.category || ''} ${place.notes || ''}`;
+  let score = place.isCurated ? 30 : 0;
+  if (CHILD_FRIENDLY_PLACE.test(name)) score += 18;
+  if (CHILD_FRIENDLY_PLACE.test(details)) score += 8;
+  if (place.babyRoom && !/없음/.test(place.babyRoom)) score += 6;
+  if (requestedMonths > 0 && requestedMonths <= 72 && /(영유아|어린이|유아|아기|놀이|체험|동물)/.test(details)) score += 8;
+  if (LOW_VALUE_PLACE.test(name)) score -= 40;
+  return score;
+};
+
+const getFacilityPlaces = (facilities = []) => facilities
+  .filter((facility) => facility?.type === '놀이·체험'
+    || facility?.category === '놀이·체험'
+    || facility?.source === 'visit-korea-tour-api')
+  .filter((facility) => facility?.status !== 'inactive')
+  .map((facility) => {
+    const region = REGION_DEFINITIONS.find((item) => item.label === facility.region);
+    return {
+      id: facility.id,
+      name: facility.name,
+      category: facility.type || facility.category || '놀이·체험',
+      address: facility.address || '',
+      lat: facility.lat,
+      lng: facility.lng,
+      regionId: region?.id || '',
+      regionLabel: facility.region || region?.label || '',
+      subRegion: facility.subRegion || '전체',
+      source: facility.source,
+      isFacilityRecord: true,
+      isCurated: false
+    };
+  });
+
+const dedupePlaces = (places) => {
+  const seen = new Set();
+  return places.filter((place) => {
+    const key = normalize(`${place.name}|${place.address}`);
+    if (!place.name || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const resolvePlaces = ({ message, places, facilities, location, childInfo }) => {
+  const curatedPlaces = getAllPlaces(places).map((place) => ({ ...place, isCurated: true }));
+  const allPlaces = dedupePlaces([...curatedPlaces, ...getFacilityPlaces(facilities)]);
   const region = extractRegion(message);
-  const subRegion = findMentionedSubRegion(message, allPlaces);
+  const regionalPlaces = region
+    ? allPlaces.filter((place) => place.regionId === region.id || place.regionLabel === region.label)
+    : allPlaces;
+  const subRegion = findMentionedSubRegion(message, regionalPlaces, region);
   const hasCoordinates = Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
 
   let candidates = allPlaces;
-  if (region) candidates = candidates.filter((place) => place.regionId === region.id);
+  if (region) candidates = regionalPlaces;
 
   if (!region && subRegion) {
     const matchedPlace = candidates.find((place) => String(place.address || '').includes(subRegion));
@@ -154,16 +248,24 @@ const resolvePlaces = ({ message, places, location }) => {
     if (freePlaces.length) candidates = freePlaces;
   }
 
+  const childFriendlyCandidates = candidates.filter((place) => !place.isFacilityRecord
+    || CHILD_FRIENDLY_PLACE.test(`${place.name} ${place.category}`));
+  if (childFriendlyCandidates.length >= 3) candidates = childFriendlyCandidates;
+
+  const requestedMonths = readRequestedMonths(message, childInfo?.months);
+
   const ranked = candidates
     .map((place) => ({
       place,
       distance: hasCoordinates ? distanceKm(location, place) : null,
-      localScore: subRegion && String(place.address || '').includes(subRegion) ? 1 : 0
+      localScore: subRegion && String(place.address || '').includes(subRegion) ? 1 : 0,
+      relevanceScore: getPlaceRelevanceScore(place, requestedMonths)
     }))
     .sort((a, b) => {
       if (a.localScore !== b.localScore) return b.localScore - a.localScore;
       if (Number.isFinite(a.distance) && Number.isFinite(b.distance)) return a.distance - b.distance;
-      return Number(Boolean(b.place.babyRoom)) - Number(Boolean(a.place.babyRoom));
+      if (a.relevanceScore !== b.relevanceScore) return b.relevanceScore - a.relevanceScore;
+      return String(a.place.name).localeCompare(String(b.place.name), 'ko');
     })
     .slice(0, 3);
 
@@ -171,91 +273,250 @@ const resolvePlaces = ({ message, places, location }) => {
     const label = region?.label || subRegion || '선택한 지역';
     return {
       mode: 'homepage',
-      answer: `${label}에는 아직 홈페이지에 등록된 가볼 곳이 없습니다. 현재 제공 중인 서울·경기·인천·부산 장소는 가볼 곳 메뉴에서 확인할 수 있어요.`,
-      actions: [{ tab: 'stamps', label: '가볼 곳 전체 보기' }],
-      sources: ['홈페이지 아기랑 놀러가요']
+      answer: `${label}에서 바로 추천할 수 있는 장소를 찾지 못했어요. 다른 지역을 선택하거나 전국 놀이·체험 시설에서 조건을 바꿔 확인해 주세요.`,
+      actions: [{ tab: 'facilities', label: '전국 놀이·체험 보기', category: '놀이·체험' }],
+      sources: ['홈페이지 전국 놀이·체험 시설 데이터']
     };
   }
 
-  const locationLabel = hasCoordinates
-    ? '현재 위치에서 가까운 순서로'
-    : `${region?.label || ranked[0].place.regionLabel}${subRegion ? ` ${subRegion}` : ''} 기준으로`;
+  const locationLabel = hasCoordinates ? '현재 위치 근처에서' : `${region?.label || ranked[0].place.regionLabel}${subRegion ? ` ${subRegion}` : ''}에서`;
+  const ageLabel = getRequestedAgeLabel(message, childInfo?.months);
+  const selectedSources = new Set(ranked.map(({ place }) => place.source).filter(Boolean));
+  const sources = ['홈페이지 아기랑 놀러가요'];
+  if (selectedSources.size) sources.push('홈페이지 전국 놀이·체험 시설 데이터');
+
+  const followUpPrefix = [region?.label, subRegion, ageLabel].filter(Boolean).join(' ');
 
   return {
     mode: 'homepage',
-    answer: `${locationLabel} 홈페이지에 등록된 장소 ${ranked.length}곳을 골랐어요. 운영시간과 휴무일은 방문 전에 해당 시설에서 한 번 더 확인해 주세요.`,
+    answer: `${locationLabel} ${ageLabel} 가볼 만한 후보 ${ranked.length}곳을 골랐어요. 어린이 체험관·박물관·공원처럼 아이와 함께 즐기기 좋은 유형과 등록된 편의 정보를 우선했어요. 운영시간·예약·연령 제한은 방문 전에 해당 시설에서 확인해 주세요.`,
     items: ranked.map(({ place, distance }) => makePlaceItem(place, distance)),
-    actions: [{
-      tab: 'stamps',
-      label: '가볼 곳 전체 보기',
-      region: ranked[0].place.regionId
-    }],
-    sources: ['홈페이지 아기랑 놀러가요']
+    actions: [
+      { type: 'reply', intent: 'places', label: '실내 위주', message: `${followUpPrefix} 실내 가볼 곳 추천해줘` },
+      { type: 'reply', intent: 'places', label: '무료 위주', message: `${followUpPrefix} 무료 가볼 곳 추천해줘` },
+      {
+        tab: 'facilities',
+        label: '놀이·체험 전체 보기',
+        category: '놀이·체험',
+        region: region?.label || ranked[0].place.regionLabel
+      }
+    ],
+    sources
   };
 };
 
-const getFacilityKeyword = (message) => {
-  if (/(소아과|소아청소년과)/.test(message)) return '소아청소년과';
-  if (/응급실/.test(message)) return '응급';
-  if (/수유실/.test(message)) return '수유실';
-  if (/어린이집/.test(message)) return '어린이집';
-  if (/가족센터/.test(message)) return '가족센터';
-  if (/육아종합지원센터/.test(message)) return '육아종합지원센터';
-  if (/(병원|의원)/.test(message)) return '병원';
-  return '';
+const facilityText = (facility) => normalize([
+  facility?.name,
+  facility?.type,
+  facility?.category,
+  facility?.subtype,
+  facility?.source,
+  facility?.address,
+  facility?.attributes ? JSON.stringify(facility.attributes) : ''
+].filter(Boolean).join(' '));
+
+const FACILITY_SEARCH_PROFILES = [
+  {
+    id: 'pediatrics',
+    label: '소아청소년과',
+    category: '병원·상담',
+    pattern: /(소아과|소아청소년과)/,
+    matches: (facility) => facility?.source === 'hira'
+      || facility?.subtype === 'pediatrics'
+  },
+  {
+    id: 'emergency',
+    label: '응급실',
+    category: '병원·상담',
+    pattern: /응급실|응급의료|응급/,
+    matches: (facility) => facility?.source === 'e-gen'
+      || /emergency/.test(String(facility?.subtype || ''))
+      || /응급/.test(facilityText(facility))
+  },
+  {
+    id: 'nursing',
+    label: '수유실·유아휴게소',
+    category: '유아휴게소',
+    pattern: /(수유실|유아휴게소|모유수유)/,
+    matches: (facility) => facility?.source === 'sooyusil'
+      || /nursing/.test(String(facility?.subtype || ''))
+      || facility?.type === '유아휴게소'
+      || facility?.category === '유아휴게소'
+  },
+  {
+    id: 'daycare',
+    label: '어린이집',
+    category: '어린이집',
+    pattern: /어린이집|보육시설/,
+    matches: (facility) => facility?.type === '어린이집'
+      || facility?.category === '어린이집'
+      || facility?.subtype === 'daycare'
+  },
+  {
+    id: 'family-center',
+    label: '가족센터',
+    category: '가족센터',
+    pattern: /가족센터|건강가정|다문화가족/,
+    matches: (facility) => facility?.type === '가족센터'
+      || facility?.category === '가족센터'
+      || /family-(?:center|counseling)/.test(String(facility?.subtype || ''))
+      || /(가족센터|건강가정|다문화가족)/.test(facilityText(facility))
+  },
+  {
+    id: 'childcare-support',
+    label: '육아종합지원센터',
+    category: '돌봄·지원센터',
+    pattern: /육아종합지원센터|육아지원센터/,
+    matches: (facility) => facility?.subtype === 'childcare-support-center'
+      || /육아종합지원센터|육아지원센터/.test(facilityText(facility))
+  },
+  {
+    id: 'counseling',
+    label: '상담·발달 지원',
+    category: '병원·상담',
+    pattern: /상담|심리|정신건강|발달센터|발달지원/,
+    matches: (facility) => /counseling|mental-health|developmental/.test(String(facility?.subtype || ''))
+      || /상담|심리|정신건강|발달센터|발달지원/.test(facilityText(facility))
+  },
+  {
+    id: 'hospital',
+    label: '병원·의원',
+    category: '병원·상담',
+    pattern: /병원|의원|의료원|클리닉/,
+    matches: (facility) => facility?.source === 'hira'
+      || facility?.source === 'e-gen'
+      || /pediatrics|emergency/.test(String(facility?.subtype || ''))
+      || /병원|의원|의료원|클리닉/.test(String(facility?.name || ''))
+  },
+  {
+    id: 'play',
+    label: '놀이·체험',
+    category: '놀이·체험',
+    pattern: /놀이시설|체험시설|놀이·체험/,
+    matches: (facility) => facility?.type === '놀이·체험'
+      || facility?.category === '놀이·체험'
+      || facility?.source === 'visit-korea-tour-api'
+  },
+  {
+    id: 'care',
+    label: '돌봄·지원센터',
+    category: '돌봄·지원센터',
+    pattern: /돌봄센터|지역아동센터|키움센터|다함께돌봄|지원센터/,
+    matches: (facility) => facility?.type === '돌봄·지원센터'
+      || facility?.category === '돌봄·지원센터'
+      || /care|support|child-center/.test(String(facility?.subtype || ''))
+  }
+];
+
+const GENERIC_FACILITY_PROFILE = {
+  id: 'all',
+  label: '육아 시설',
+  category: '전체',
+  pattern: /시설/,
+  matches: () => true
 };
 
-const resolveFacilities = ({ message, facilities, pendingIntent }) => {
-  const region = extractRegion(message);
-  const subRegion = findMentionedSubRegion(message, facilities);
-  const pendingKeyword = String(pendingIntent || '').startsWith('facilities:')
+const getFacilityProfile = (message, pendingIntent) => {
+  if (/(소아과|소아청소년과)/.test(message) && /(수유실|유아휴게소|모유수유)/.test(message)) {
+    return FACILITY_SEARCH_PROFILES.find((profile) => profile.id === 'pediatrics');
+  }
+  if (/(병원|의원|의료원|클리닉)/.test(message) && /(수유실|유아휴게소|모유수유)/.test(message)) {
+    return FACILITY_SEARCH_PROFILES.find((profile) => profile.id === 'hospital');
+  }
+  const direct = FACILITY_SEARCH_PROFILES.find((profile) => profile.pattern.test(message));
+  if (direct) return direct;
+
+  const pendingValue = String(pendingIntent || '').startsWith('facilities:')
     ? String(pendingIntent).slice('facilities:'.length)
     : '';
-  const keyword = getFacilityKeyword(message) || pendingKeyword;
+  if (!pendingValue) return GENERIC_FACILITY_PROFILE;
 
-  if (!region && !subRegion) {
+  return FACILITY_SEARCH_PROFILES.find((profile) => profile.id === pendingValue
+    || profile.label === pendingValue
+    || profile.pattern.test(pendingValue)) || GENERIC_FACILITY_PROFILE;
+};
+
+const getFacilityScore = (facility, profile, subRegion) => {
+  const text = facilityText(facility);
+  let score = 0;
+  if (facility?.status === 'active') score += 2;
+  if (facility?.address) score += 1;
+  if (subRegion && (facility?.subRegion === subRegion || String(facility?.address || '').includes(subRegion))) score += 12;
+  if (facility?.type === profile.category || facility?.category === profile.category) score += 10;
+  if (profile.pattern.test(String(facility?.name || ''))) score += 24;
+
+  if (profile.id === 'pediatrics') {
+    if (facility?.source === 'hira') score += 100;
+    if (facility?.subtype === 'pediatrics') score += 80;
+  }
+  if (profile.id === 'hospital' && ['hira', 'e-gen'].includes(facility?.source)) score += 80;
+  if (profile.id === 'nursing' && facility?.source === 'sooyusil') score += 90;
+  if (profile.id === 'play' && facility?.source === 'visit-korea-tour-api') score += 40;
+  if (profile.id === 'counseling' && /counseling|mental-health|developmental/.test(String(facility?.subtype || ''))) score += 70;
+  if (profile.id === 'family-center' && /family/.test(String(facility?.subtype || ''))) score += 60;
+  if (text.includes(normalize(profile.label))) score += 12;
+  return score;
+};
+
+const resolveFacilities = ({ message, facilities, pendingIntent, location }) => {
+  const region = extractRegion(message);
+  const regionalFacilities = region
+    ? (Array.isArray(facilities) ? facilities : []).filter((facility) => facility.region === region.label)
+    : (Array.isArray(facilities) ? facilities : []);
+  const subRegion = findMentionedSubRegion(message, regionalFacilities, region);
+  const profile = getFacilityProfile(message, pendingIntent);
+  const hasCoordinates = Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
+  const asksForUnverifiedNursingAmenity = ['pediatrics', 'hospital', 'emergency'].includes(profile.id)
+    && /(수유실|유아휴게소|모유수유)/.test(message);
+
+  if (!region && !subRegion && !hasCoordinates) {
     return {
       mode: 'homepage',
-      answer: `어느 지역에서 ${keyword ? `${keyword} 시설` : '육아 시설'}을 찾을까요? 현재 위치를 사용하거나 지역을 직접 선택해 주세요.`,
+      answer: `어느 지역에서 ${profile.label}을 찾을까요? 현재 위치를 사용하거나 지역을 직접 선택해 주세요.`,
       actions: [
-        { tab: 'facilities', type: 'navigate', label: '현재 위치로 찾기', query: keyword, useLocation: true },
+        { type: 'location', intent: `facilities:${profile.id}`, label: '현재 위치 사용' },
         ...REGION_DEFINITIONS.slice(0, 4).map((item) => ({
           type: 'reply',
-          intent: `facilities:${keyword}`,
+          intent: `facilities:${profile.id}`,
           label: item.label,
-          message: `${item.label} ${keyword || '육아 시설'} 찾아줘`
+          message: `${item.label} ${profile.label} 찾아줘`
         })),
-        { tab: 'facilities', type: 'navigate', label: '다른 지역 선택', query: keyword }
+        { tab: 'facilities', type: 'navigate', label: '다른 지역 선택', category: profile.category }
       ],
       sources: ['홈페이지 전국 육아시설 데이터'],
-      pendingIntent: `facilities:${keyword}`
+      pendingIntent: `facilities:${profile.id}`
     };
   }
 
-  let candidates = Array.isArray(facilities) ? facilities : [];
-  if (region) candidates = candidates.filter((facility) => facility.region === region.label);
+  let candidates = region ? regionalFacilities : (Array.isArray(facilities) ? facilities : []);
   if (subRegion) candidates = candidates.filter((facility) => facility.subRegion === subRegion || String(facility.address || '').includes(subRegion));
-  if (keyword) {
-    const searchWords = keyword === '병원'
-      ? ['병원', '의원', '소아']
-      : keyword === '소아청소년과'
-        ? ['소아청소년과', '소아과', '병원', '의원']
-        : [keyword];
-    candidates = candidates.filter((facility) => searchWords.some((word) =>
-      normalize(`${facility.name} ${facility.type}`).includes(normalize(word))
-    ));
-  }
+  candidates = candidates.filter(profile.matches);
 
-  const selected = candidates.slice(0, 3);
+  const ranked = candidates
+    .map((facility) => ({
+      facility,
+      score: getFacilityScore(facility, profile, subRegion),
+      distance: hasCoordinates ? distanceKm(location, facility) : null
+    }))
+    .sort((a, b) => {
+      if (Number.isFinite(a.distance) !== Number.isFinite(b.distance)) {
+        return Number.isFinite(a.distance) ? -1 : 1;
+      }
+      if (Number.isFinite(a.distance) && Number.isFinite(b.distance)) return a.distance - b.distance;
+      if (a.score !== b.score) return b.score - a.score;
+      return String(a.facility.name).localeCompare(String(b.facility.name), 'ko');
+    });
+
+  const selected = ranked.slice(0, 3);
   if (!selected.length) {
     return {
       mode: 'homepage',
-      answer: '조건에 정확히 맞는 시설을 대화 안에서 찾지 못했어요. 시설 메뉴로 이동해 지역과 시설 종류를 직접 선택해 주세요.',
+      answer: `${[region?.label, subRegion].filter(Boolean).join(' ') || '선택한 위치'}에서 ${profile.label}을 찾지 못했어요. 지역 범위를 넓히거나 시설 메뉴에서 다른 조건으로 확인해 주세요.`,
       actions: [{
         tab: 'facilities',
-        label: `${keyword || '시설'} 검색하기`,
-        query: keyword,
-        region: region?.label,
+        label: `${profile.label} 다시 찾기`,
+        category: profile.category,
+        region: hasCoordinates ? '전체' : region?.label,
         subRegion
       }],
       sources: ['홈페이지 전국 육아시설 데이터']
@@ -264,28 +525,33 @@ const resolveFacilities = ({ message, facilities, pendingIntent }) => {
 
   return {
     mode: 'homepage',
-    answer: `${[region?.label, subRegion].filter(Boolean).join(' ') || '홈페이지'}에서 확인되는 ${keyword ? `${keyword} 시설` : '시설'}을 정리했어요.`,
-    items: selected.map((facility) => ({
+    answer: `${hasCoordinates ? '현재 위치 근처' : [region?.label, subRegion].filter(Boolean).join(' ') || '홈페이지'}에서 확인되는 ${profile.label} ${candidates.length.toLocaleString('ko-KR')}곳 중 3곳을 보여드릴게요.${asksForUnverifiedNursingAmenity ? ' 다만 현재 자료에는 의료기관별 수유실 보유 여부가 없어 그 조건까지 확인할 수는 없어요.' : ''} 운영 여부와 ${['pediatrics', 'emergency', 'hospital'].includes(profile.id) ? '진료시간' : '이용시간'}${asksForUnverifiedNursingAmenity ? '·수유공간' : ''}은 방문 전에 해당 기관에서 확인해 주세요.`,
+    items: selected.map(({ facility, distance }) => ({
       kind: 'facility',
       title: facility.name,
-      subtitle: facility.type || '육아 시설',
+      subtitle: [facility.type || '육아 시설', formatDistance(distance)].filter(Boolean).join(' · '),
       detail: facility.address || '',
+      meta: `출처: ${getSourceLabel(facility.source)}`,
       action: {
         tab: 'facilities',
         label: '시설에서 보기',
         query: facility.name,
+        category: facility.type || profile.category,
         region: facility.region,
         subRegion: facility.subRegion
       }
     })),
     actions: [{
       tab: 'facilities',
-      label: '시설 전체 결과 보기',
-      query: keyword,
-      region: region?.label,
+      label: `${profile.category === '전체' ? '시설' : profile.category} 전체 보기`,
+      category: profile.category,
+      region: hasCoordinates ? '전체' : region?.label,
       subRegion
     }],
-    sources: ['홈페이지 전국 육아시설 데이터']
+    sources: [
+      '홈페이지 전국 육아시설 데이터',
+      ...new Set(selected.map(({ facility }) => getSourceLabel(facility.source)))
+    ].slice(0, 3)
   };
 };
 
@@ -489,7 +755,7 @@ const shouldUseSafetyRoute = (message, childMonths) => {
   const temperatureMatch = message.match(/(\d{2}(?:\.\d+)?)\s*(?:도|℃|°\s*c)/i);
   const temperature = temperatureMatch ? Number(temperatureMatch[1]) : null;
   if (Number.isFinite(temperature) && (temperature >= 40 || (Number(childMonths) < 3 && temperature >= 38))) return true;
-  return /(호흡.{0,8}(곤란|멈)|숨.{0,5}(못|안)|경련|발작|의식.{0,8}(없|저하)|청색증|입술.{0,6}(파랗|푸르)|질식|심한\s*출혈)/.test(message);
+  return /(호흡.{0,8}(곤란|멈)|숨.{0,5}(못|안)|경련|발작|의식.{0,8}(없|저하)|깨워도.{0,8}(안|못|반응.{0,2}없)|축\s*늘어|청색증|입술.{0,6}(파랗|푸르)|질식|심한\s*출혈)/.test(message);
 };
 
 export const resolveHomepageGuide = async ({
@@ -509,11 +775,17 @@ export const resolveHomepageGuide = async ({
   if (!normalizedMessage || shouldUseSafetyRoute(normalizedMessage, childInfo?.months)) return null;
 
   if (pendingIntent === 'places' || PLACE_INTENT.test(normalizedMessage)) {
-    return resolvePlaces({ message: normalizedMessage, places, location });
+    return resolvePlaces({
+      message: normalizedMessage,
+      places,
+      facilities,
+      location,
+      childInfo
+    });
   }
 
-  if (String(pendingIntent || '').startsWith('facilities') || (FACILITY_INTENT.test(normalizedMessage) && (LOCATION_WORDS.test(normalizedMessage) || /(어디|찾|위치|추천)/.test(normalizedMessage)))) {
-    return resolveFacilities({ message: normalizedMessage, facilities, pendingIntent });
+  if (String(pendingIntent || '').startsWith('facilities') || (FACILITY_INTENT.test(normalizedMessage) && (extractRegion(normalizedMessage) || LOCATION_WORDS.test(normalizedMessage) || /(어디|찾|위치|추천)/.test(normalizedMessage)))) {
+    return resolveFacilities({ message: normalizedMessage, facilities, pendingIntent, location });
   }
 
   if (WELFARE_INTENT.test(normalizedMessage)) {

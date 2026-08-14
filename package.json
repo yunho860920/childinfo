@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --test tests/ai-guide-router.test.mjs",
+    "test:ai": "node --test tests/ai-guide-router.test.mjs",
     "guard:data": "node scripts/data-guard.mjs",
     "guard:facilities": "node scripts/facilities/build-runtime.mjs && node scripts/facilities/check-v2.mjs",
     "facilities:audit": "node scripts/facilities/audit-legacy.mjs --write",

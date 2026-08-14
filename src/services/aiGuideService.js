@@ -3,11 +3,11 @@ import {
   growthMilestones,
   temperatureGuide,
   vaccinationSchedule
-} from '../data/healthInfo';
-import { ageTimelineData } from '../data/practicalInfo';
-import { dentalTimeline, sleepSafetyGuide, weaningTimeline } from '../data/expertGuides';
-import { milestonesData } from '../data/milestones';
-import { resolveHomepageGuide } from './homepageGuideRouter';
+} from '../data/healthInfo.js';
+import { ageTimelineData } from '../data/practicalInfo.js';
+import { dentalTimeline, sleepSafetyGuide, weaningTimeline } from '../data/expertGuides.js';
+import { milestonesData } from '../data/milestones.js';
+import { resolveHomepageGuide } from './homepageGuideRouter.js';
 
 const MAX_CONTEXT_ITEMS = 8;
 export const MAX_DAILY_AI_QUESTIONS = 3;
@@ -19,11 +19,34 @@ const SYNONYM_GROUPS = [
   ['이유식', '수유', '분유', '모유', '영양', '식사'],
   ['잠', '수면', '재우기', '낮잠'],
   ['성장', '발달', '마일스톤'],
-  ['병원', '의원', '소아과', '소아청소년과', '응급실'],
-  ['시설', '어린이집', '육아종합지원센터', '가족센터', '수유실'],
+  ['소아과', '소아청소년과'],
+  ['병원', '의원', '의료원', '클리닉'],
+  ['응급실', '응급의료'],
+  ['수유실', '유아휴게소', '모유수유'],
+  ['어린이집', '보육시설'],
+  ['육아종합지원센터', '육아지원센터'],
+  ['가족센터', '건강가정지원센터', '다문화가족지원'],
+  ['상담', '심리', '정신건강', '발달지원'],
   ['복지', '지원금', '혜택', '바우처', '수당'],
-  ['놀이', '체험', '가볼곳', '나들이'],
+  ['놀이', '체험', '가볼곳', '가볼만한곳', '갈만한곳', '나들이'],
   ['치아', '양치', '칫솔', '유치']
+];
+
+const REGION_SEARCH_TERMS = [
+  ['서울', '서울시', '서울특별시'],
+  ['경기', '경기도'],
+  ['인천', '인천시', '인천광역시'],
+  ['부산', '부산시', '부산광역시'],
+  ['대구', '대구시', '대구광역시'],
+  ['대전', '대전시', '대전광역시'],
+  ['광주', '광주시', '광주광역시'],
+  ['울산', '울산시', '울산광역시'],
+  ['세종', '세종시', '세종특별자치시'],
+  ['강원', '강원도', '강원특별자치도'],
+  ['충북', '충청북도'], ['충남', '충청남도'],
+  ['전북', '전라북도', '전북특별자치도'], ['전남', '전라남도'],
+  ['경북', '경상북도'], ['경남', '경상남도'],
+  ['제주', '제주도', '제주특별자치도']
 ];
 
 const normalize = (value) => String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -161,17 +184,28 @@ const STATIC_KNOWLEDGE = buildStaticKnowledge();
 
 const getSearchTerms = (question) => {
   const normalizedQuestion = normalize(question);
-  const terms = new Set(
-    normalizedQuestion
-      .split(/[^0-9a-z가-힣]+/i)
-      .map((term) => term.trim())
-      .filter((term) => term.length >= 2)
-  );
+  const compactQuestion = normalizedQuestion.replace(/\s+/g, '');
+  const terms = new Set();
+
+  normalizedQuestion
+    .split(/[^0-9a-z가-힣]+/i)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 2)
+    .forEach((term) => {
+      terms.add(term);
+      const withoutParticle = term.replace(/(?:에서|에는|에게|으로|이랑|와|과|랑|을|를|은|는|이|가|에|로)$/, '');
+      if (withoutParticle.length >= 2) terms.add(withoutParticle);
+    });
 
   SYNONYM_GROUPS.forEach((group) => {
-    if (group.some((word) => normalizedQuestion.includes(word))) {
+    if (group.some((word) => normalizedQuestion.includes(word)
+      || compactQuestion.includes(word.replace(/\s+/g, '')))) {
       group.forEach((word) => terms.add(word));
     }
+  });
+
+  REGION_SEARCH_TERMS.forEach(([canonical, ...aliases]) => {
+    if ([canonical, ...aliases].some((alias) => compactQuestion.includes(alias))) terms.add(canonical);
   });
 
   return [...terms];
@@ -187,17 +221,54 @@ const scoreText = (entry, terms) => {
   }, 0);
 };
 
-const getFacilityEntries = (facilities, terms) => {
+const getFacilityEntries = (facilities, terms, question) => {
   if (!Array.isArray(facilities) || terms.length === 0) return [];
+  if (!/(소아과|소아청소년과|병원|의원|응급실|수유실|유아휴게소|어린이집|육아종합지원센터|가족센터|상담|심리|발달|시설|센터|근처|주변|위치|찾)/.test(normalize(question))) return [];
 
-  return facilities
+  const hasAnyTerm = (...words) => words.some((word) => terms.includes(word));
+  const requestedRegion = REGION_SEARCH_TERMS.find(([canonical]) => terms.includes(canonical))?.[0];
+  const regionalFacilities = requestedRegion
+    ? facilities.filter((facility) => facility.region === requestedRegion)
+    : facilities;
+  const narrowedFacilities = regionalFacilities.filter((facility) => {
+    const subtype = String(facility.subtype || '');
+    const source = String(facility.source || '');
+    const text = normalize(`${facility.name || ''} ${facility.type || ''}`);
+    if (hasAnyTerm('소아과', '소아청소년과')) return source === 'hira' || subtype === 'pediatrics';
+    if (hasAnyTerm('병원', '의원', '의료원', '클리닉') && hasAnyTerm('수유실', '유아휴게소', '모유수유')) {
+      return ['hira', 'e-gen'].includes(source)
+        || /pediatrics|emergency/.test(subtype)
+        || /병원|의원|의료원|클리닉/.test(String(facility.name || ''));
+    }
+    if (hasAnyTerm('수유실', '유아휴게소', '모유수유')) return source === 'sooyusil' || /nursing/.test(subtype);
+    if (hasAnyTerm('가족센터', '건강가정지원센터', '다문화가족지원')) return /family/.test(subtype) || /가족센터|건강가정|다문화가족/.test(text);
+    if (hasAnyTerm('어린이집', '보육시설')) return subtype === 'daycare' || facility.type === '어린이집';
+    if (hasAnyTerm('육아종합지원센터', '육아지원센터')) return subtype === 'childcare-support-center' || /육아종합지원센터|육아지원센터/.test(text);
+    if (hasAnyTerm('상담', '심리', '정신건강', '발달지원')) return /counseling|mental-health|developmental/.test(subtype) || /상담|심리|정신건강|발달/.test(text);
+    if (hasAnyTerm('놀이', '체험', '가볼곳', '가볼만한곳', '갈만한곳', '나들이')) return facility.type === '놀이·체험' || source === 'visit-korea-tour-api';
+    if (hasAnyTerm('병원', '의원', '의료원', '클리닉')) return ['hira', 'e-gen'].includes(source)
+      || /pediatrics|emergency/.test(subtype)
+      || /병원|의원|의료원|클리닉/.test(String(facility.name || ''));
+    return true;
+  });
+
+  return narrowedFacilities
     .map((facility) => {
+      const subtype = String(facility.subtype || '');
+      const source = String(facility.source || '');
+      const semanticKeywords = [];
+      if (source === 'hira' || subtype === 'pediatrics') semanticKeywords.push('병원 의원 소아과 소아청소년과');
+      if (source === 'sooyusil' || /nursing/.test(subtype)) semanticKeywords.push('수유실 유아휴게소 모유수유');
+      if (source === 'visit-korea-tour-api' || subtype === 'tour-experience') semanticKeywords.push('놀이 체험 가볼곳 나들이');
+      if (/counseling|mental-health|developmental/.test(subtype)) semanticKeywords.push('상담 심리 발달 정신건강');
+      if (/family/.test(subtype)) semanticKeywords.push('가족센터 가족상담');
+      if (/childcare-support/.test(subtype)) semanticKeywords.push('육아종합지원센터 육아지원');
       const entry = makeEntry({
         title: facility.name || '시설',
-        content: [facility.type, facility.address, facility.region, facility.subRegion, facility.dong],
+        content: [facility.type, facility.address, facility.region, facility.subRegion, facility.dong, subtype],
         tab: 'facilities',
         query: facility.name || '',
-        keywords: `${facility.type || ''} 병원 의원 소아과 어린이집 센터 수유실`
+        keywords: `${facility.type || ''} ${semanticKeywords.join(' ')}`
       });
       return { entry, score: scoreText(entry, terms) };
     })
@@ -206,7 +277,34 @@ const getFacilityEntries = (facilities, terms) => {
     .slice(0, 3);
 };
 
-export const buildGuideContext = (question, facilities = []) => {
+const getPlaceEntries = (places, terms, question) => {
+  if (!places || typeof places !== 'object' || terms.length === 0) return [];
+  if (!/(놀러|나들이|가\s*볼|가볼|갈\s*만한|갈만한|놀이|체험|장소\s*추천|어디.{0,6}(?:갈|놀))/.test(normalize(question))) return [];
+  const regionLabels = {
+    seoul: '서울', gyeonggi: '경기', incheon: '인천', busan: '부산',
+    daegu: '대구', daejeon: '대전', gwangju: '광주', ulsan: '울산',
+    sejong: '세종', gangwon: '강원', chungbuk: '충북', chungnam: '충남',
+    jeonbuk: '전북', jeonnam: '전남', gyeongbuk: '경북', gyeongnam: '경남', jeju: '제주'
+  };
+  const requestedRegion = REGION_SEARCH_TERMS.find(([canonical]) => terms.includes(canonical))?.[0];
+
+  return Object.entries(places)
+    .filter(([regionId]) => !requestedRegion || regionLabels[regionId] === requestedRegion)
+    .flatMap(([regionId, regionPlaces]) => (Array.isArray(regionPlaces) ? regionPlaces : []).map((place) => {
+      const entry = makeEntry({
+        title: place.name || '가볼 곳',
+        content: [place.category, place.address, place.notes, place.babyRoom],
+        tab: 'stamps',
+        keywords: `${regionLabels[regionId] || regionId} 놀이 체험 가볼곳 나들이`
+      });
+      return { entry, score: scoreText(entry, terms) };
+    }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+};
+
+export const buildGuideContext = (question, facilities = [], places = {}) => {
   const terms = getSearchTerms(question);
   const staticMatches = STATIC_KNOWLEDGE
     .map((entry) => ({ entry, score: scoreText(entry, terms) }))
@@ -214,8 +312,9 @@ export const buildGuideContext = (question, facilities = []) => {
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_CONTEXT_ITEMS);
 
-  const facilityMatches = getFacilityEntries(facilities, terms);
-  const combined = [...facilityMatches, ...staticMatches]
+  const facilityMatches = getFacilityEntries(facilities, terms, question);
+  const placeMatches = getPlaceEntries(places, terms, question);
+  const combined = [...placeMatches, ...facilityMatches, ...staticMatches]
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_CONTEXT_ITEMS)
     .map(({ entry }) => ({
@@ -275,7 +374,7 @@ const mayNeedSafetyResponse = (message, childMonths) => {
   const temperatureMatch = String(message).match(/(\d{2}(?:\.\d+)?)\s*(?:도|℃|°\s*c)/i);
   const temperature = temperatureMatch ? Number(temperatureMatch[1]) : null;
   if (Number.isFinite(temperature) && (temperature >= 40 || (Number(childMonths) < 3 && temperature >= 38))) return true;
-  return /(숨.{0,5}(못|안)|호흡.{0,8}(곤란|멈)|경련|발작|의식.{0,8}(없|저하)|청색증|질식|심한\s*출혈)/.test(String(message));
+  return /(숨.{0,5}(못|안)|호흡.{0,8}(곤란|멈)|경련|발작|의식.{0,8}(없|저하)|깨워도.{0,8}(안|못|반응.{0,2}없)|축\s*늘어|청색증|입술.{0,6}(파랗|푸르)|질식|심한\s*출혈)/.test(String(message));
 };
 
 export const askAiGuide = async ({
@@ -328,7 +427,7 @@ export const askAiGuide = async ({
       message,
       history: history.slice(-6).map((item) => ({ role: item.role, text: item.text })),
       childMonths: Number.isFinite(Number(childInfo?.months)) ? Number(childInfo.months) : undefined,
-      context: buildGuideContext(message, facilities)
+      context: buildGuideContext(message, facilities, places)
     })
   });
 
