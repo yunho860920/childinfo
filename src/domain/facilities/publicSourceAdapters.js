@@ -406,8 +406,9 @@ export function normalizeYouthCounselingRecord(row, options = {}) {
 export function normalizeHiraHospitalRecord(row, options = {}) {
   const sourceId = pick(row, 'ykiho', '암호화요양기호', '기관ID');
   const name = pick(row, 'yadmNm', '병원명', '요양기관명');
+  const medicalSubject = pick(row, 'dgsbjtCdNm', '진료과목명') || options.medicalSubject || null;
   const subjectText = [
-    pick(row, 'dgsbjtCdNm', '진료과목명'),
+    medicalSubject,
     pick(row, 'clCdNm', '종별코드명'),
     name
   ].filter(Boolean).join(' ');
@@ -429,7 +430,8 @@ export function normalizeHiraHospitalRecord(row, options = {}) {
     sourceUpdatedAt: pick(row, '데이터기준일자'),
     attributes: {
       institutionType: pick(row, 'clCdNm', '종별코드명'),
-      medicalSubject: pick(row, 'dgsbjtCdNm', '진료과목명')
+      medicalSubject,
+      medicalSubjectCode: pick(row, 'dgsbjtCd', '진료과목코드') || options.medicalSubjectCode || null
     }
   }, sourceOptions(FACILITY_SOURCES.HIRA, sourceId, SOURCE_URLS.hira, row, options));
 }

@@ -19,6 +19,7 @@ npm run facilities:sync:keyless
 npm run facilities:sync:files
 npm run facilities:sync:keyed -- nursing-rooms
 npm run facilities:sync:keyed -- tour-api
+npm run facilities:sync:keyed -- hira-pediatrics
 npm run facilities:import:childcare -- path/to/childcare.json
 npm run facilities:import -- city-parks path/to/parks.json
 ```
@@ -33,4 +34,4 @@ npm run facilities:import -- city-parks path/to/parks.json
 
 승인키 기반 원천은 `facilities:sync:keyed -- nursing-rooms`, `facilities:sync:keyed -- hira-pediatrics`, `facilities:sync:keyed -- tour-api`처럼 원천을 명시해 갱신한다. 키는 각각 서버 전용 `NURSING_API_KEY`, `HIRA_API_KEY`, `TOUR_API_KEY`에서 읽는다. 로컬 이전 설정과의 호환을 위해 수집 명령만 `PUBLIC_DATA_API_KEY`를 임시 대체값으로 허용한다.
 
-2026-08-13 기준 수유정보 알리미 3,046건과 TourAPI 어린이·가족·체험 장소 3,633건 수집에 성공했다. TourAPI 원천 48,875건 중 관련 키워드·분류 및 주소 검증을 통과한 3,633건을 화면에 반영한다. 현재 공공데이터 키는 HIRA 병원정보서비스 권한이 없어 403이며 활용신청 승인 후 다시 실행해야 한다. 어린이집정보공개포털도 별도 개발계정·인증키가 필요하다.
+2026-08-13 기준 수유정보 알리미 3,046건, TourAPI 어린이·가족·체험 장소 3,633건, HIRA 소아청소년과 15,401건 수집에 성공했다. TourAPI 원천 48,875건 중 관련 키워드·분류 및 주소 검증을 통과한 항목만 화면에 반영한다. HIRA는 `dgsbjtCd=11`로 조회하며 응답에 진료과목명이 없어 수집 시 소아청소년과 태그를 명시한다. 2026년 7월 출범한 `전남광주통합특별시` 주소는 기존 앱의 17개 지역 필터와 호환되도록 광주 5개 자치구와 전남 지역으로 나눠 표시한다. 어린이집정보공개포털은 별도 개발계정·인증키가 필요하다.

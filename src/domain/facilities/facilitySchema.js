@@ -46,6 +46,7 @@ const REGION_ALIASES = new Map([
   ['경남', '경남'], ['경상남도', '경남'],
   ['제주', '제주'], ['제주도', '제주'], ['제주특별자치도', '제주']
 ]);
+const LEGACY_GWANGJU_DISTRICTS = new Set(['광산구', '남구', '동구', '북구', '서구']);
 
 const CATEGORY_VALUES = new Set(Object.values(FACILITY_CATEGORIES));
 const OFFICIAL_SOURCE_PRIORITY = new Map([
@@ -103,9 +104,22 @@ export function normalizeSubRegionName(value, region = '기타') {
 export function parseFacilityAddress(address, preferred = {}) {
   const cleanedAddress = cleanText(address);
   const tokens = cleanedAddress.split(' ').filter(Boolean);
-  const region = normalizeRegionName(preferred.region || tokens[0]);
+  const rawRegion = cleanText(preferred.region || tokens[0]).replace(/[()]/g, '');
+  const rawSubRegion = cleanText(preferred.subRegion || tokens[1]).replace(/[(),]/g, '');
+  let region = normalizeRegionName(rawRegion);
+  let compatibleSubRegion = rawSubRegion;
+  if (rawRegion.startsWith('전남광주') || cleanedAddress.startsWith('전남광주통합특별시')) {
+    const formerGwangjuSubRegion = rawSubRegion.replace(/^광주/, '');
+    if (LEGACY_GWANGJU_DISTRICTS.has(formerGwangjuSubRegion)) {
+      region = '광주';
+      compatibleSubRegion = formerGwangjuSubRegion;
+    } else {
+      region = '전남';
+      compatibleSubRegion = rawSubRegion.replace(/^전남/, '');
+    }
+  }
 
-  let subRegion = normalizeSubRegionName(preferred.subRegion, region);
+  let subRegion = normalizeSubRegionName(compatibleSubRegion, region);
   if (subRegion === '전체') {
     const candidate = tokens.slice(1, 4).find((token) => /(?:시|군|구)$/.test(token));
     subRegion = normalizeSubRegionName(candidate, region);

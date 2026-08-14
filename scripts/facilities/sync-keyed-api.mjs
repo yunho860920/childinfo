@@ -33,7 +33,9 @@ const KEYED_SOURCES = Object.freeze({
     fallbackEnvName: 'PUBLIC_DATA_API_KEY',
     keyParam: 'ServiceKey',
     paginated: true,
-    defaults: { dgsbjtCd: '11', _type: 'json' }
+    defaults: { dgsbjtCd: '11', _type: 'json' },
+    upstreamFiltered: true,
+    normalizeOptions: { medicalSubject: '소아청소년과', medicalSubjectCode: '11' }
   },
   'tour-api': {
     category: '놀이·체험',
@@ -208,8 +210,15 @@ async function syncSource(sourceId) {
   if (!adapter) throw new Error(`${sourceId}: adapter is missing.`);
   console.log(`[facility-keyed] fetching ${sourceId}`);
   const sourceRows = await fetchSourceRows(sourceId, config);
-  const includedRows = adapter.include ? sourceRows.filter(adapter.include) : sourceRows;
-  const normalized = includedRows.map((row) => adapter.normalize(row, { collectedAt }));
+  const includedRows = config.upstreamFiltered
+    ? sourceRows
+    : adapter.include
+      ? sourceRows.filter(adapter.include)
+      : sourceRows;
+  const normalized = includedRows.map((row) => adapter.normalize(row, {
+    collectedAt,
+    ...config.normalizeOptions
+  }));
   const validationResults = normalized.map((record) => ({
     record,
     errors: validateFacilityRecord(record)
