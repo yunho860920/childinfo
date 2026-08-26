@@ -2,7 +2,7 @@ import { defineConfig } from '@apps-in-toss/web-framework/config';
 
 export default defineConfig({
   appName: 'myfirstinfantcare',
-  outdir: 'dist',
+  outdir: 'dist-ait',
   brand: {
     displayName: '초보아빠화이팅',
     primaryColor: '#F04452',
@@ -16,7 +16,7 @@ export default defineConfig({
     port: 5173,
     commands: {
       dev: 'vite',
-      build: 'vite build',
+      build: 'npm run build:ait:web',
     },
   },
   webViewProps: {

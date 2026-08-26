@@ -19,6 +19,7 @@ import { jejuInfra } from '../data/infrastructure/jeju/index';
 import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
 import { nursingRoomsInfra } from '../data/infrastructure/nursing_rooms';
 import { fetchNursingRoomsFromApi } from './nursingRoomService';
+import { getApiUrl } from './apiUrl.js';
 import { normalizeRegionName, parseAggressiveRegion } from '../utils/regionUtils';
 
 // System Database: High-density verified data
@@ -131,7 +132,7 @@ export async function fetchChildFacilities() {
     const pagesToFetch = [1, 2, 10, 80];
     try {
       const requests = pagesToFetch.map(page => {
-        const url = `/api/child-facilities?pageNo=${page}&numOfRows=200`;
+        const url = getApiUrl(`/api/child-facilities?pageNo=${page}&numOfRows=200`);
         return fetch(url, { signal: AbortSignal.timeout(10000) })
           .then(res => res.ok ? res.json() : null)
           .catch(() => null);

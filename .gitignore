@@ -1,6 +1,8 @@
 # Maintenance: Force trigger deployment for dashboard UI updates
 node_modules/
 dist/
+dist-ait/
+.ait-release/
 .env
 .env.local
 .env.*.local

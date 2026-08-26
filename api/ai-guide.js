@@ -1,3 +1,5 @@
+import { handleTossCors } from '../server/cors.js';
+
 const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 const MAX_MESSAGE_LENGTH = 600;
 const MAX_CONTEXT_ITEMS = 8;
@@ -202,6 +204,8 @@ const parseBody = (body) => {
 };
 
 export default async function handler(req, res) {
+  if (handleTossCors(req, res, ['POST'])) return;
+
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
 

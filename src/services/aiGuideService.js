@@ -8,6 +8,7 @@ import { ageTimelineData } from '../data/practicalInfo.js';
 import { dentalTimeline, sleepSafetyGuide, weaningTimeline } from '../data/expertGuides.js';
 import { milestonesData } from '../data/milestones.js';
 import { resolveHomepageGuide } from './homepageGuideRouter.js';
+import { getApiUrl } from './apiUrl.js';
 
 const MAX_CONTEXT_ITEMS = 8;
 export const MAX_DAILY_AI_QUESTIONS = 3;
@@ -420,7 +421,7 @@ export const askAiGuide = async ({
     throw error;
   }
 
-  const response = await fetch('/api/ai-guide', {
+  const response = await fetch(getApiUrl('/api/ai-guide'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

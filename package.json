@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node --test tests/ai-guide-router.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "test:ai": "node --test tests/ai-guide-router.test.mjs",
     "guard:data": "node scripts/data-guard.mjs",
     "guard:facilities": "node scripts/facilities/build-runtime.mjs && node scripts/facilities/check-v2.mjs",
@@ -17,8 +17,12 @@
     "facilities:sync:keyed": "node scripts/facilities/sync-keyed-api.mjs",
     "facilities:build:runtime": "node scripts/facilities/build-runtime.mjs",
     "build": "npm run guard:data && npm run guard:facilities && vite build",
+    "build:ait:web": "npm run guard:data && npm run guard:facilities && node scripts/build-ait-web.mjs",
+    "clean:ait": "node scripts/clean-ait-output.mjs",
     "preview": "vite preview",
-    "ait:build": "npx ait build",
+    "ait:prepare": "npm run clean:ait && npm run build:ait:web && node scripts/prepare-ait-web.mjs",
+    "ait:build": "npm run ait:prepare && npx ait build && npm run ait:validate",
+    "ait:validate": "node scripts/validate-ait-artifact.mjs",
     "ait:deploy": "npx ait deploy"
   },
   "dependencies": {
@@ -35,6 +39,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
+    "esbuild": "^0.21.5",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.1",
     "vite": "^5.2.2"

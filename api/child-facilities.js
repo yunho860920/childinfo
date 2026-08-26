@@ -1,6 +1,10 @@
+import { handleTossCors } from '../server/cors.js';
+
 const FACILITY_API_URL = 'https://apis.data.go.kr/B554287/sclWlfrFcltInfoInqirService1/getFcltListInfoInqire';
 
 export default async function handler(req, res) {
+  if (handleTossCors(req, res, ['GET'])) return;
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'method_not_allowed' });

@@ -1,5 +1,6 @@
 // src/services/nursingRoomService.js
 import { parseAggressiveRegion, isValidDong } from '../utils/regionUtils';
+import { getApiUrl } from './apiUrl.js';
 
 /**
  * 유아휴게소(수유실) API 연동 기초 구조
@@ -10,7 +11,7 @@ import { parseAggressiveRegion, isValidDong } from '../utils/regionUtils';
  * 3. 에러 핸들링 및 타임아웃 처리
  */
 
-const NURSING_API_URL = '/api/nursing-rooms';
+const NURSING_API_URL = getApiUrl('/api/nursing-rooms');
 
 /**
  * 전국 유아휴게소 데이터를 가져와 앱 표준 포맷으로 변환합니다.

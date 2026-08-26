@@ -1,6 +1,10 @@
+import { handleTossCors } from '../server/cors.js';
+
 const NURSING_API_URL = 'https://sooyusil.com/api/nursingRoomJSON.do';
 
 export default async function handler(req, res) {
+  if (handleTossCors(req, res, ['GET'])) return;
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'method_not_allowed' });

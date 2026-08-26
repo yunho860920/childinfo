@@ -1,3 +1,5 @@
+import { handleTossCors } from '../server/cors.js';
+
 const SOURCE_CONFIG = Object.freeze({
   'community-child-centers': {
     url: 'https://api.data.go.kr/openapi/tn_pubr_public_local_child_center_api',
@@ -36,6 +38,8 @@ function positiveInteger(value, fallback, max) {
 }
 
 export default async function handler(req, res) {
+  if (handleTossCors(req, res, ['GET'])) return;
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'method_not_allowed' });
