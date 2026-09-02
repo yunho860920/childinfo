@@ -1,6 +1,6 @@
 // src/utils/growthUtils.js
-import { milestonesData } from '../data/milestones';
-import { getGrowthPercentile } from '../data/growthStandard';
+import { milestonesData } from '../data/milestones.js';
+import { getGrowthPercentile } from '../data/growthStandard.js';
 
 /**
  * 나이에 따른 발달 이정표(Milestones) 가져오기
@@ -81,13 +81,53 @@ export const calculatePercentile = (childInfo) => {
 /**
  * 생년월일에 따른 개월 수 계산
  */
-export const calculateMonths = (date) => {
+export const calculateMonths = (date, referenceDate = new Date()) => {
   if (!date) return 0;
-  const start = new Date(date);
-  const end = new Date();
+
+  const dateParts = String(date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const start = dateParts
+    ? new Date(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))
+    : new Date(date);
+  const end = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return 0;
+
   let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
   if (end.getDate() < start.getDate()) {
     months--;
   }
   return Math.max(0, months);
+};
+
+/**
+ * 월령에 맞는 건강 정보 기본 카테고리
+ */
+export const getHealthCategoryForMonths = (months) => {
+  const safeMonths = Math.max(0, Number(months) || 0);
+  if (safeMonths <= 1) return '신생아기 (0~1개월)';
+  if (safeMonths <= 12) return '영아기 (1~12개월)';
+  if (safeMonths <= 36) return '유아기 (1~3세)';
+  if (safeMonths <= 72) return '학령전기 (3~6세)';
+  return '학령기 (만 7세~)';
+};
+
+/**
+ * 월령별 가이드에서 가장 가까운 이전 시점
+ */
+export const getTimelineMonthForMonths = (months) => {
+  const safeMonths = Math.max(0, Number(months) || 0);
+  const available = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
+  return [...available].reverse().find((month) => month <= safeMonths) ?? 0;
+};
+
+/**
+ * 출생 후 월령에 맞는 복지 로드맵 단계
+ */
+export const getWelfareStageForMonths = (months) => {
+  const safeMonths = Math.max(0, Number(months) || 0);
+  if (safeMonths === 0) return 2;
+  if (safeMonths <= 3) return 3;
+  if (safeMonths <= 12) return 4;
+  if (safeMonths <= 36) return 5;
+  return 6;
 };

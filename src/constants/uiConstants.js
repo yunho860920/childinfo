@@ -11,7 +11,7 @@ export const WELFARE_STAGES = [
   { id: 3, label: '초기 정착', desc: '1~3개월' },
   { id: 4, label: '성장 가속', desc: '4~12개월' },
   { id: 5, label: '유아기 발전', desc: '13~36개월' },
-  { id: 6, label: '취학 전', desc: '37~60개월' }
+  { id: 6, label: '취학 전·학령기', desc: '37개월 이상' }
 ];
 
 export const ALL_REGIONS = [
@@ -24,5 +24,5 @@ export const MIN_PIN_LENGTH = 6;
 export const FACILITIES_PER_PAGE = 12;
 
 export const FACILITY_CATEGORIES = [
-  '전체', '어린이집', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담'
+  '전체', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담'
 ];

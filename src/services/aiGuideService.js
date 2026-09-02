@@ -9,10 +9,18 @@ import { dentalTimeline, sleepSafetyGuide, weaningTimeline } from '../data/exper
 import { milestonesData } from '../data/milestones.js';
 import { resolveHomepageGuide } from './homepageGuideRouter.js';
 import { getApiUrl } from './apiUrl.js';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 
 const MAX_CONTEXT_ITEMS = 8;
 export const MAX_DAILY_AI_QUESTIONS = 3;
+export const AI_GUIDE_TIMEOUT_MS = 15000;
+const FACILITY_DATA_INTENT = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|유아휴게소|육아종합지원센터|가족센터|돌봄센터|시설|가볼\s*곳|가볼\s*만한\s*곳|갈\s*만한|놀러|나들이|체험)/;
 const DAILY_USAGE_KEY = 'childinfo_ai_daily_usage';
+
+export const needsFacilityDataForGuide = (message) => {
+  const nonDaycareQuery = String(message || '').replace(/어린이집|보육시설/g, '');
+  return FACILITY_DATA_INTENT.test(nonDaycareQuery);
+};
 
 const SYNONYM_GROUPS = [
   ['열', '발열', '고열', '체온', '해열'],
@@ -24,7 +32,6 @@ const SYNONYM_GROUPS = [
   ['병원', '의원', '의료원', '클리닉'],
   ['응급실', '응급의료'],
   ['수유실', '유아휴게소', '모유수유'],
-  ['어린이집', '보육시설'],
   ['육아종합지원센터', '육아지원센터'],
   ['가족센터', '건강가정지원센터', '다문화가족지원'],
   ['상담', '심리', '정신건강', '발달지원'],
@@ -95,10 +102,10 @@ const buildStaticKnowledge = () => {
     }),
     makeEntry({
       title: '시설·병원 위치 찾기',
-      content: '시설 메뉴에서 지역을 선택하거나 내 주변 시설 찾기를 이용해 병원, 어린이집, 가족센터, 육아지원센터와 수유실의 위치를 확인할 수 있습니다.',
+      content: '시설 메뉴에서 지역을 선택하거나 내 주변 시설 찾기를 이용해 병원, 가족센터, 육아지원센터와 수유실의 위치를 확인할 수 있습니다.',
       tab: 'facilities',
       query: '',
-      keywords: '위치 근처 주변 병원 소아과 응급실 어린이집 센터 수유실'
+      keywords: '위치 근처 주변 병원 소아과 응급실 센터 수유실'
     }),
     makeEntry({
       title: '복지 혜택 찾기',
@@ -228,9 +235,12 @@ const getFacilityEntries = (facilities, terms, question) => {
 
   const hasAnyTerm = (...words) => words.some((word) => terms.includes(word));
   const requestedRegion = REGION_SEARCH_TERMS.find(([canonical]) => terms.includes(canonical))?.[0];
+  const visibleFacilities = facilities.filter((facility) => facility?.type !== '어린이집'
+    && facility?.category !== '어린이집'
+    && !/daycare/.test(String(facility?.subtype || '')));
   const regionalFacilities = requestedRegion
-    ? facilities.filter((facility) => facility.region === requestedRegion)
-    : facilities;
+    ? visibleFacilities.filter((facility) => facility.region === requestedRegion)
+    : visibleFacilities;
   const narrowedFacilities = regionalFacilities.filter((facility) => {
     const subtype = String(facility.subtype || '');
     const source = String(facility.source || '');
@@ -243,7 +253,6 @@ const getFacilityEntries = (facilities, terms, question) => {
     }
     if (hasAnyTerm('수유실', '유아휴게소', '모유수유')) return source === 'sooyusil' || /nursing/.test(subtype);
     if (hasAnyTerm('가족센터', '건강가정지원센터', '다문화가족지원')) return /family/.test(subtype) || /가족센터|건강가정|다문화가족/.test(text);
-    if (hasAnyTerm('어린이집', '보육시설')) return subtype === 'daycare' || facility.type === '어린이집';
     if (hasAnyTerm('육아종합지원센터', '육아지원센터')) return subtype === 'childcare-support-center' || /육아종합지원센터|육아지원센터/.test(text);
     if (hasAnyTerm('상담', '심리', '정신건강', '발달지원')) return /counseling|mental-health|developmental/.test(subtype) || /상담|심리|정신건강|발달/.test(text);
     if (hasAnyTerm('놀이', '체험', '가볼곳', '가볼만한곳', '갈만한곳', '나들이')) return facility.type === '놀이·체험' || source === 'visit-korea-tour-api';
@@ -421,16 +430,29 @@ export const askAiGuide = async ({
     throw error;
   }
 
-  const response = await fetch(getApiUrl('/api/ai-guide'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message,
-      history: history.slice(-6).map((item) => ({ role: item.role, text: item.text })),
-      childMonths: Number.isFinite(Number(childInfo?.months)) ? Number(childInfo.months) : undefined,
-      context: buildGuideContext(message, facilities, places)
-    })
-  });
+  let response;
+  try {
+    response = await fetchWithTimeout(getApiUrl('/api/ai-guide'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        history: history.slice(-6).map((item) => ({ role: item.role, text: item.text })),
+        childMonths: Number.isFinite(Number(childInfo?.months)) ? Number(childInfo.months) : undefined,
+        context: buildGuideContext(message, facilities, places)
+      })
+    }, AI_GUIDE_TIMEOUT_MS);
+  } catch (error) {
+    const requestError = new Error(
+      error?.code === 'REQUEST_TIMEOUT'
+        ? 'AI 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.'
+        : 'AI 서버에 연결하지 못했습니다. 인터넷 연결을 확인한 후 다시 시도해 주세요.'
+    );
+    requestError.code = error?.code === 'REQUEST_TIMEOUT'
+      ? 'AI_GUIDE_TIMEOUT'
+      : 'AI_GUIDE_NETWORK_ERROR';
+    throw requestError;
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {

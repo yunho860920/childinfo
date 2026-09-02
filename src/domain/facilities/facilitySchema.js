@@ -1,3 +1,5 @@
+import { normalizeSubRegionName as normalizeSharedSubRegionName } from '../../utils/regionUtils.js';
+
 export const FACILITY_SCHEMA_VERSION = 2;
 
 export const FACILITY_CATEGORIES = Object.freeze({
@@ -95,10 +97,7 @@ export function normalizeRegionName(value) {
 }
 
 export function normalizeSubRegionName(value, region = '기타') {
-  const cleaned = cleanText(value).replace(/[(),]/g, '');
-  if (!cleaned || cleaned === '전체') return '전체';
-  if (region === '세종' && ['세종', '세종시', '세종특별자치시'].includes(cleaned)) return '세종시';
-  return cleaned;
+  return normalizeSharedSubRegionName(value, region);
 }
 
 export function parseFacilityAddress(address, preferred = {}) {

@@ -11,7 +11,11 @@ import {
   ShieldCheck,
   Sparkles
 } from 'lucide-react';
-import { askAiGuide, getDailyAiQuota } from '../../services/aiGuideService';
+import {
+  askAiGuide,
+  getDailyAiQuota,
+  needsFacilityDataForGuide
+} from '../../services/aiGuideService';
 
 const WELCOME_MESSAGE = {
   id: 'welcome',
@@ -26,8 +30,6 @@ const QUICK_QUESTIONS = [
   '근처 소아과를 찾아줘',
   '3개월 아기 수유량을 알려줘'
 ];
-
-const NEEDS_FACILITY_DATA = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|유아휴게소|어린이집|육아종합지원센터|가족센터|돌봄센터|시설|가볼\s*곳|가볼\s*만한\s*곳|갈\s*만한|놀러|나들이|체험)/;
 
 const createMessageId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
@@ -93,7 +95,7 @@ const AiGuideTab = ({
     setIsLoading(true);
 
     try {
-      const resolvedFacilities = facilities.length === 0 && NEEDS_FACILITY_DATA.test(text) && ensureFacilities
+      const resolvedFacilities = facilities.length === 0 && needsFacilityDataForGuide(text) && ensureFacilities
         ? await ensureFacilities()
         : facilities;
       const result = await askAiGuide({

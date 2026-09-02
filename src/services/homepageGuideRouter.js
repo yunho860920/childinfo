@@ -23,7 +23,8 @@ const REGION_DEFINITIONS = [
 ];
 
 const PLACE_INTENT = /(놀러|나들이|가\s*볼\s*만\s*한\s*곳|가볼\s*만한\s*곳|가볼\s*곳|갈\s*만한|외출|(?:아이|아기|아동|어린이)(?:와|랑|과)\s*(?:갈|가볼|놀|체험)|장소\s*추천|체험(?:시설|장소)?\s*추천|어디(?:에|로)?\s*(?:갈|놀))/;
-const FACILITY_INTENT = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|어린이집|육아종합지원센터|가족센터|유아휴게소|돌봄센터|놀이시설|체험시설|시설)/;
+const FACILITY_INTENT = /(소아과|소아청소년과|병원|의원|응급실|상담|심리|발달센터|수유실|육아종합지원센터|가족센터|유아휴게소|돌봄센터|놀이시설|체험시설|시설)/;
+const DAYCARE_INTENT = /(어린이집|보육시설)/;
 const WELFARE_INTENT = /(복지|혜택|지원금|수당|바우처|부모급여|첫만남이용권|육아휴직|보육료)/;
 const VACCINE_INTENT = /(예방접종|접종|백신)/;
 const LOCATION_WORDS = /(근처|주변|가까운|내\s*위치|현재\s*위치|우리\s*동네)/;
@@ -315,6 +316,34 @@ const facilityText = (facility) => normalize([
   facility?.attributes ? JSON.stringify(facility.attributes) : ''
 ].filter(Boolean).join(' '));
 
+const isDaycareFacility = (facility) => facility?.type === '어린이집'
+  || facility?.category === '어린이집'
+  || /daycare/.test(String(facility?.subtype || ''));
+
+const isDaycareSearchRequest = (message, pendingIntent) => {
+  if (String(pendingIntent || '') === 'facilities:daycare') return true;
+  if (WELFARE_INTENT.test(message)
+    || /(적응|등원|분리불안|준비물|낮잠|식사|친구|선생님)/.test(message)) {
+    return false;
+  }
+  if (/^(어린이집|보육시설)$/.test(message)) return true;
+  return DAYCARE_INTENT.test(message)
+    && (extractRegion(message)
+      || LOCATION_WORDS.test(message)
+      || /(어디|찾|위치|추천|목록|시설|정보|알려|있(?:어|나요|을까))/.test(message));
+};
+
+const resolveDeferredDaycare = () => ({
+  mode: 'homepage',
+  answer: '어린이집 찾기는 데이터 정확도 점검을 위해 현재 제공을 보류하고 있어요. 빈 목록이나 확인되지 않은 시설을 대신 보여드리지는 않을게요. 최신 운영 여부·정원·대기 정보는 아이사랑 또는 어린이집정보공개포털에서 확인해 주세요.',
+  actions: [{
+    tab: 'facilities',
+    label: '다른 육아시설 보기',
+    category: '전체'
+  }],
+  sources: []
+});
+
 const FACILITY_SEARCH_PROFILES = [
   {
     id: 'pediatrics',
@@ -342,15 +371,6 @@ const FACILITY_SEARCH_PROFILES = [
       || /nursing/.test(String(facility?.subtype || ''))
       || facility?.type === '유아휴게소'
       || facility?.category === '유아휴게소'
-  },
-  {
-    id: 'daycare',
-    label: '어린이집',
-    category: '어린이집',
-    pattern: /어린이집|보육시설/,
-    matches: (facility) => facility?.type === '어린이집'
-      || facility?.category === '어린이집'
-      || facility?.subtype === 'daycare'
   },
   {
     id: 'family-center',
@@ -459,10 +479,12 @@ const getFacilityScore = (facility, profile, subRegion) => {
 };
 
 const resolveFacilities = ({ message, facilities, pendingIntent, location }) => {
+  const visibleFacilities = (Array.isArray(facilities) ? facilities : [])
+    .filter((facility) => !isDaycareFacility(facility));
   const region = extractRegion(message);
   const regionalFacilities = region
-    ? (Array.isArray(facilities) ? facilities : []).filter((facility) => facility.region === region.label)
-    : (Array.isArray(facilities) ? facilities : []);
+    ? visibleFacilities.filter((facility) => facility.region === region.label)
+    : visibleFacilities;
   const subRegion = findMentionedSubRegion(message, regionalFacilities, region);
   const profile = getFacilityProfile(message, pendingIntent);
   const hasCoordinates = Number.isFinite(Number(location?.lat)) && Number.isFinite(Number(location?.lng));
@@ -488,7 +510,7 @@ const resolveFacilities = ({ message, facilities, pendingIntent, location }) => 
     };
   }
 
-  let candidates = region ? regionalFacilities : (Array.isArray(facilities) ? facilities : []);
+  let candidates = region ? regionalFacilities : visibleFacilities;
   if (subRegion) candidates = candidates.filter((facility) => facility.subRegion === subRegion || String(facility.address || '').includes(subRegion));
   candidates = candidates.filter(profile.matches);
 
@@ -773,6 +795,10 @@ export const resolveHomepageGuide = async ({
 }) => {
   const normalizedMessage = normalize(message);
   if (!normalizedMessage || shouldUseSafetyRoute(normalizedMessage, childInfo?.months)) return null;
+
+  if (isDaycareSearchRequest(normalizedMessage, pendingIntent)) {
+    return resolveDeferredDaycare();
+  }
 
   if (pendingIntent === 'places' || PLACE_INTENT.test(normalizedMessage)) {
     return resolvePlaces({

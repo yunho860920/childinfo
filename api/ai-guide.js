@@ -48,7 +48,7 @@ const RESPONSE_SCHEMA = {
           query: { type: 'STRING' },
           category: {
             type: 'STRING',
-            enum: ['전체', '어린이집', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담']
+            enum: ['전체', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담']
           },
           healthCategory: { type: 'STRING' }
         },
@@ -66,7 +66,7 @@ const RESPONSE_SCHEMA = {
 
 const ALLOWED_TABS = new Set(['health', 'practical', 'welfare', 'facilities', 'stamps']);
 const ALLOWED_FACILITY_CATEGORIES = new Set([
-  '전체', '어린이집', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담'
+  '전체', '놀이·체험', '돌봄·지원센터', '가족센터', '유아휴게소', '병원·상담'
 ]);
 const ALLOWED_HEALTH_CATEGORIES = new Set([
   '예방접종 일정',
@@ -154,6 +154,23 @@ const getSafetyResponse = (message, childMonths) => {
   };
 };
 
+const isDaycareFacilitySearch = (message) => {
+  if (!/(어린이집|보육시설)/.test(message)) return false;
+  if (/(적응|등원|분리불안|준비물|낮잠|식사|친구|선생님|복지|혜택|보육료|비용|지원금|수당)/.test(message)) {
+    return false;
+  }
+  if (/^(어린이집|보육시설)$/.test(message)) return true;
+  return /(어디|찾|위치|추천|목록|시설|정보|알려|근처|주변|있(?:어|나요|을까)|서울|경기|인천|부산|대구|대전|광주|울산|세종|강원|충북|충남|전북|전남|경북|경남|제주)/.test(message);
+};
+
+const getDeferredDaycareResponse = () => ({
+  answer: '어린이집 찾기는 데이터 정확도 점검을 위해 현재 제공을 보류하고 있어요. 빈 목록이나 확인되지 않은 시설을 대신 보여드리지는 않을게요. 최신 운영 여부·정원·대기 정보는 아이사랑 또는 어린이집정보공개포털에서 확인해 주세요.',
+  actions: [{ tab: 'facilities', label: '다른 육아시설 보기', category: '전체' }],
+  sources: [],
+  usesGeneralKnowledge: false,
+  daycareDeferred: true
+});
+
 const sanitizeContext = (items) => (Array.isArray(items) ? items : [])
   .slice(0, MAX_CONTEXT_ITEMS)
   .map((item) => ({
@@ -237,6 +254,9 @@ export default async function handler(req, res) {
   const message = redactSensitiveData(originalMessage);
   const safetyResponse = getSafetyResponse(message, childMonths);
   if (safetyResponse) return res.status(200).json(safetyResponse);
+  if (isDaycareFacilitySearch(message)) {
+    return res.status(200).json(getDeferredDaycareResponse());
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {

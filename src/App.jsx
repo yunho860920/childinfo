@@ -36,9 +36,15 @@ import ThemeToggle from './components/common/ThemeToggle';
 import { consultationService } from './services/consultationService';
 import { fetchWelfareServices } from './services/welfareApi';
 import { fetchChildFacilities, getFilteredFacilities } from './services/facilityApi';
-import { calculateMonths, calculatePercentile } from './utils/growthUtils';
+import {
+  calculateMonths,
+  calculatePercentile,
+  getHealthCategoryForMonths,
+  getTimelineMonthForMonths,
+  getWelfareStageForMonths
+} from './utils/growthUtils';
 import { FACILITIES_PER_PAGE, ALL_REGIONS } from './constants/uiConstants';
-import { normalizeDong } from './utils/regionUtils';
+import { normalizeDong, normalizeSubRegionName } from './utils/regionUtils';
 
 const AI_GUIDE_ENABLED = true;
 
@@ -60,7 +66,7 @@ function App() {
     const DEFAULT_PROFILE = {
       name: '우리 아이 별칭',
       birthDate: '2023-10-01',
-      months: 6,
+      months: 0,
       gender: 'male',
       height: 68,
       weight: 8.5
@@ -70,13 +76,14 @@ function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object' && parsed.birthDate) {
-           return { ...DEFAULT_PROFILE, ...parsed };
+          const profile = { ...DEFAULT_PROFILE, ...parsed };
+          return { ...profile, months: calculateMonths(profile.birthDate) };
         }
       }
     } catch (e) {
       console.warn("CORE Agent: LocalStorage Restricted/Unavailable:", e);
     }
-    return DEFAULT_PROFILE;
+    return { ...DEFAULT_PROFILE, months: calculateMonths(DEFAULT_PROFILE.birthDate) };
   });
   
   const [growthRecords, setGrowthRecords] = React.useState(() => {
@@ -112,20 +119,6 @@ function App() {
     setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 3000);
   };
 
-  const getHealthCategoryForMonths = (months) => {
-    if (months <= 1) return '신생아기 (0~1개월)';
-    if (months <= 12) return '영아기 (1~12개월)';
-    if (months <= 36) return '유아기 (1~3세)';
-    if (months <= 72) return '학령전기 (3~6세)';
-    return '학령기 (만 7세)';
-  };
-
-  const getTimelineMonthForMonths = (months) => {
-    const available = [0, 1, 2, 3, 4, 5, 6, 9, 12, 18, 24, 30, 36];
-    const past = available.filter(m => m <= months);
-    return past.length > 0 ? past[past.length - 1] : 36;
-  };
-
   const [selectedHealthCategory, setSelectedHealthCategory] = React.useState(() => getHealthCategoryForMonths(childInfo.months));
   const [selectedTimelineMonth, setSelectedTimelineMonth] = React.useState(() => getTimelineMonthForMonths(childInfo.months));
   const [completedVaccines, setCompletedVaccines] = React.useState(() => {
@@ -145,7 +138,7 @@ function App() {
   const [selectedTemp, setSelectedTemp] = React.useState(36.5);
 
   const [welfareItems, setWelfareItems] = React.useState([]);
-  const [selectedWelfareStage, setSelectedWelfareStage] = React.useState(1);
+  const [selectedWelfareStage, setSelectedWelfareStage] = React.useState(() => getWelfareStageForMonths(childInfo.months));
   const [isLoadingWelfare, setIsLoadingWelfare] = React.useState(false);
   const [welfareRegion, setWelfareRegion] = React.useState('전체');
   const [welfareSubRegion, setWelfareSubRegion] = React.useState('전체');
@@ -155,6 +148,8 @@ function App() {
 
   const [facilities, setFacilities] = React.useState([]);
   const facilityLoadPromiseRef = React.useRef(null);
+  const [isLoadingFacilities, setIsLoadingFacilities] = React.useState(false);
+  const [facilityLoadError, setFacilityLoadError] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [facilityPage, setFacilityPage] = React.useState(1);
   const [selectedRegion, setSelectedRegion] = React.useState('전체');
@@ -166,6 +161,7 @@ function App() {
   const [stampTarget, setStampTarget] = React.useState({ region: 'seoul', spotId: null });
 
   const [userId, setUserId] = React.useState(() => {
+    if (AI_GUIDE_ENABLED) return null;
     const ANONYMOUS_PREFIX = 'user_anonymous_' + Math.random().toString(36).substring(2, 7);
     try {
       if (typeof window === 'undefined') return ANONYMOUS_PREFIX;
@@ -219,6 +215,8 @@ function App() {
 
   // ── Supabase 익명 인증 (보안 강화) ────────────────────────────────────────
   React.useEffect(() => {
+    if (AI_GUIDE_ENABLED) return undefined;
+
     const initAuth = async () => {
       try {
         const existingUser = await consultationService.getCurrentUser();
@@ -335,6 +333,33 @@ function App() {
   }, [childInfo]);
 
   React.useEffect(() => {
+    const refreshMonths = () => {
+      setChildInfo((current) => {
+        const months = calculateMonths(current.birthDate);
+        return current.months === months ? current : { ...current, months };
+      });
+    };
+    const handleVisibilityChange = () => {
+      if (!document.hidden) refreshMonths();
+    };
+
+    refreshMonths();
+    const intervalId = window.setInterval(refreshMonths, 60 * 60 * 1000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    setSelectedHealthCategory(getHealthCategoryForMonths(childInfo.months));
+    setSelectedTimelineMonth(getTimelineMonthForMonths(childInfo.months));
+    setSelectedWelfareStage(getWelfareStageForMonths(childInfo.months));
+  }, [childInfo.months]);
+
+  React.useEffect(() => {
     const loadWelfare = async () => {
       setIsLoadingWelfare(true);
       const data = await fetchWelfareServices(welfareRegion, welfareSubRegion);
@@ -347,12 +372,23 @@ function App() {
   const ensureFacilities = React.useCallback(async () => {
     if (facilities.length > 0) return facilities;
     if (!facilityLoadPromiseRef.current) {
+      setIsLoadingFacilities(true);
+      setFacilityLoadError(null);
       facilityLoadPromiseRef.current = fetchChildFacilities()
         .then((data) => {
+          if (!Array.isArray(data) || data.length === 0) {
+            throw new Error('시설 데이터가 비어 있습니다.');
+          }
           setFacilities(data);
           return data;
         })
+        .catch((error) => {
+          console.error('Facility data load failed:', error);
+          setFacilityLoadError('시설 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          throw error;
+        })
         .finally(() => {
+          setIsLoadingFacilities(false);
           facilityLoadPromiseRef.current = null;
         });
     }
@@ -361,8 +397,13 @@ function App() {
 
   React.useEffect(() => {
     if (!['facilities', 'consult'].includes(activeTab) || facilities.length > 0) return;
-    ensureFacilities();
+    ensureFacilities().catch(() => {});
   }, [activeTab, ensureFacilities, facilities.length]);
+
+  const retryFacilities = React.useCallback(() => {
+    facilityLoadPromiseRef.current = null;
+    ensureFacilities().catch(() => {});
+  }, [ensureFacilities]);
 
   // --- Handlers ---
   const handleBirthDateChange = (date) => {
@@ -370,6 +411,7 @@ function App() {
     setChildInfo(prev => ({ ...prev, birthDate: date, months }));
     setSelectedHealthCategory(getHealthCategoryForMonths(months));
     setSelectedTimelineMonth(getTimelineMonthForMonths(months));
+    setSelectedWelfareStage(getWelfareStageForMonths(months));
   };
 
   const handleAddGrowthRecord = (rec) => {
@@ -460,11 +502,14 @@ function App() {
             break;
           }
         }
+        const normalizedSubRegion = foundRegion === '전체'
+          ? '전체'
+          : normalizeSubRegionName([city, district].filter(Boolean).join(' '), foundRegion);
         const normalizedNeighborhood = normalizeDong(neighborhood);
         setSelectedRegion(foundRegion);
-        setSelectedSubRegion(district || '전체');
+        setSelectedSubRegion(normalizedSubRegion);
         setSelectedDong(normalizedNeighborhood);
-        setLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${district} ${normalizedNeighborhood}) 주변 시설을 찾았습니다.` });
+        setLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${normalizedSubRegion} ${normalizedNeighborhood}) 주변 시설을 찾았습니다.` });
       } catch (err) {
         setLocationMsg({ type: 'error', text: '위치 정보를 분석할 수 없습니다.' });
       } finally {
@@ -497,9 +542,12 @@ function App() {
           }
         }
         
+        const normalizedSubRegion = foundRegion === '전체'
+          ? '전체'
+          : normalizeSubRegionName([city, district].filter(Boolean).join(' '), foundRegion);
         setWelfareRegion(foundRegion);
-        setWelfareSubRegion(district || '전체');
-        setWelfareLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${district}) 기반 혜택을 찾았습니다.` });
+        setWelfareSubRegion(normalizedSubRegion);
+        setWelfareLocationMsg({ type: 'success', text: `내 위치(${foundRegion} ${normalizedSubRegion}) 기반 혜택을 찾았습니다.` });
       } catch (err) {
         setWelfareLocationMsg({ type: 'error', text: '위치 정보를 분석할 수 없습니다.' });
       } finally {
@@ -817,6 +865,9 @@ function App() {
               availableSubRegions={availableSubRegions} 
               handleGeolocation={handleGeolocation} 
               facilities={facilities} 
+              isLoadingFacilities={isLoadingFacilities}
+              facilityLoadError={facilityLoadError}
+              retryFacilities={retryFacilities}
               selectedFacilityCategory={selectedFacilityCategory}
               setSelectedFacilityCategory={setSelectedFacilityCategory}
             />

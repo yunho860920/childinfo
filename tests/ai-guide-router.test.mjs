@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { resolveHomepageGuide } from '../src/services/homepageGuideRouter.js';
-import { askAiGuide, buildGuideContext } from '../src/services/aiGuideService.js';
+import {
+  askAiGuide,
+  buildGuideContext,
+  needsFacilityDataForGuide
+} from '../src/services/aiGuideService.js';
 import { isFamilyPlayTourRecord } from '../src/domain/facilities/publicSourceAdapters.js';
 
 const facilities = [
@@ -116,6 +120,36 @@ test('가족센터 검색은 가족센터를 정확히 반환한다', async () =
 
   assert.equal(result.items.length, 2);
   assert.ok(result.items.every((item) => item.title.endsWith('가족센터')));
+});
+
+test('어린이집 시설 검색은 빈 결과 대신 데이터 제공 보류를 명확히 안내한다', async () => {
+  const result = await resolve('서울 어린이집 추천해줘');
+
+  assert.equal(result.mode, 'homepage');
+  assert.match(result.answer, /제공을 보류/);
+  assert.match(result.answer, /아이사랑|어린이집정보공개포털/);
+  assert.equal(result.items, undefined);
+  assert.equal(result.actions[0].category, '전체');
+});
+
+test('단독 어린이집 질문도 외부 AI 호출 없이 보류 상태를 안내한다', async () => {
+  const result = await resolve('어린이집');
+
+  assert.equal(result.mode, 'homepage');
+  assert.match(result.answer, /제공을 보류/);
+  assert.equal(needsFacilityDataForGuide('어린이집'), false);
+  assert.equal(needsFacilityDataForGuide('보육시설'), false);
+  assert.equal(needsFacilityDataForGuide('근처 소아과를 찾아줘'), true);
+  assert.equal(needsFacilityDataForGuide('어린이집 근처 소아과'), true);
+});
+
+test('어린이집 적응과 보육료 질문은 시설검색 보류 응답으로 가로채지 않는다', async () => {
+  const adaptation = await resolve('어린이집 적응 팁 알려줘');
+  const subsidy = await resolve('어린이집 보육료 혜택 알려줘');
+
+  assert.equal(adaptation, null);
+  assert.doesNotMatch(subsidy.answer, /제공을 보류/);
+  assert.equal(subsidy.actions[0].tab, 'welfare');
 });
 
 test('붙여 쓴 가볼만한곳 질문도 3세 맞춤 홈페이지 결과로 처리한다', async () => {

@@ -33,6 +33,64 @@ const REGION_ALIASES = new Map([
   ['제주', '제주'], ['제주도', '제주'], ['제주특별자치도', '제주']
 ]);
 
+const METROPOLITAN_REGIONS = new Set([
+  '서울', '인천', '부산', '대구', '대전', '광주', '울산'
+]);
+
+// 행정구역 이름 자체가 광역 시·도 이름으로 시작하는 예외다.
+// 접두사를 제거하면 부산진구 -> 진구, 제주시 -> 시로 훼손된다.
+const SUBREGIONS_SHARING_REGION_PREFIX = new Set(['부산진구', '제주시']);
+
+// 도 단위 UI는 일반구보다 상위 시를 선택 단위로 사용한다.
+// 예: 수원팔달구/수원시 팔달구 -> 수원시
+const DISTRICT_CITY_PREFIXES = new Map([
+  ['경기', ['수원', '성남', '안양', '안산', '고양', '용인', '부천', '화성']],
+  ['충북', ['청주']],
+  ['충남', ['천안']],
+  ['전북', ['전주']],
+  ['경북', ['포항']],
+  ['경남', ['창원']]
+]);
+
+const getRegionPrefixes = (region) => [...REGION_ALIASES.entries()]
+  .filter(([, canonical]) => canonical === region)
+  .map(([alias]) => alias.replace(/\s+/g, ''))
+  .sort((a, b) => b.length - a.length);
+
+/**
+ * 원천별로 제각각인 시·군·구 이름을 시설 UI의 선택 단위로 통일합니다.
+ * 광역시는 시 이름 접두사를 제거하고, 일반구가 있는 도 지역은 상위 시로 묶습니다.
+ */
+export function normalizeSubRegionName(value, region = '기타') {
+  const cleaned = String(value || '').replace(/[(),]/g, '').replace(/\s+/g, ' ').trim();
+  if (!cleaned || cleaned === '전체') return '전체';
+
+  const normalizedRegion = normalizeRegionName(region);
+  if (normalizedRegion === '세종'
+    && ['세종', '세종시', '세종특별자치시'].includes(cleaned)) {
+    return '세종시';
+  }
+
+  let compact = cleaned.replace(/\s+/g, '');
+  if (SUBREGIONS_SHARING_REGION_PREFIX.has(compact)) return compact;
+
+  const regionPrefix = getRegionPrefixes(normalizedRegion)
+    .find((prefix) => compact.startsWith(prefix) && compact.length > prefix.length);
+  if (regionPrefix) compact = compact.slice(regionPrefix.length);
+
+  if (METROPOLITAN_REGIONS.has(normalizedRegion)) return compact || '전체';
+
+  const cityPrefixes = DISTRICT_CITY_PREFIXES.get(normalizedRegion) || [];
+  const matchedCity = cityPrefixes.find((city) => {
+    if (!compact.startsWith(city)) return false;
+    const remainder = compact.slice(city.length).replace(/^시/, '');
+    return !remainder || /구$/.test(remainder);
+  });
+  if (matchedCity) return `${matchedCity}시`;
+
+  return compact || '전체';
+}
+
 export function normalizeRegionName(value) {
   const cleaned = String(value || '').replace(/[()]/g, '').trim();
   if (!cleaned) return '기타';

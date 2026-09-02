@@ -7,6 +7,7 @@ import { cn } from '../../utils/uiUtils';
 import { getSubRegions } from '../../services/welfareApi';
 
 const WelfareTab = ({
+  childInfo,
   welfareItems = [],
   selectedWelfareStage,
   setSelectedWelfareStage,
@@ -23,12 +24,21 @@ const WelfareTab = ({
   setWelfareLocationMsg,
   handleWelfareGeolocation
 }) => {
+  const visibleWelfareItems = React.useMemo(
+    () => welfareItems.filter((item) => item.stage === selectedWelfareStage),
+    [selectedWelfareStage, welfareItems]
+  );
+
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold text-brand-gray-900 dark:text-white">맞춤형 복지 혜택</h3>
-          <p className="text-brand-gray-500 dark:text-brand-gray-400 mt-1 text-sm">아이의 성장 단계와 지역에 맞는 혜택을 확인하세요.</p>
+          <p className="text-brand-gray-500 dark:text-brand-gray-400 mt-1 text-sm">
+            {Number.isFinite(Number(childInfo?.months))
+              ? `${Number(childInfo.months)}개월 기준 기본 단계를 자동으로 골랐어요. 다른 단계도 직접 확인할 수 있습니다.`
+              : '아이의 성장 단계와 지역에 맞는 혜택을 확인하세요.'}
+          </p>
         </div>
         <button
           onClick={handleWelfareGeolocation}
@@ -38,6 +48,11 @@ const WelfareTab = ({
           <Navigation size={16} className={isLocatingWelfare ? 'animate-spin' : 'text-brand-primary'} />
           {isLocatingWelfare ? '위치 확인 중...' : '내 주변 혜택 찾기'}
         </button>
+      </div>
+
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold leading-relaxed text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+        <AlertCircle size={16} className="mt-0.5 shrink-0" />
+        <p>복지 정보는 실시간 행정 조회가 아닌 요약 안내입니다. 대상 조건·금액·접수 기간은 신청 전 각 항목의 공식 기관에서 다시 확인해 주세요.</p>
       </div>
 
       <AnimatePresence>
@@ -150,10 +165,21 @@ const WelfareTab = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {welfareItems.length > 0 ? (
-          welfareItems
-            .filter(item => item.stage === selectedWelfareStage)
-            .map((item) => (
+        {isLoadingWelfare ? (
+          Array.from({ length: 4 }, (_, index) => (
+            <div
+              key={index}
+              className="h-48 animate-pulse rounded-[2rem] border border-brand-gray-100 bg-white p-6 dark:border-apple-border dark:bg-apple-card"
+              aria-hidden="true"
+            >
+              <div className="h-4 w-24 rounded bg-brand-gray-100 dark:bg-apple-border" />
+              <div className="mt-6 h-6 w-3/4 rounded bg-brand-gray-100 dark:bg-apple-border" />
+              <div className="mt-4 h-4 w-full rounded bg-brand-gray-50 dark:bg-apple-elevated" />
+              <div className="mt-2 h-4 w-2/3 rounded bg-brand-gray-50 dark:bg-apple-elevated" />
+            </div>
+          ))
+        ) : visibleWelfareItems.length > 0 ? (
+          visibleWelfareItems.map((item) => (
               <div 
                 key={item.id} 
                 onClick={() => setExpandedWelfareId(expandedWelfareId === item.id ? null : item.id)}
@@ -202,7 +228,8 @@ const WelfareTab = ({
         ) : (
           <div className="col-span-full py-20 text-center bg-white dark:bg-apple-card rounded-[2rem] border-2 border-dashed border-brand-gray-100 dark:border-apple-border text-brand-gray-400 font-bold">
             <AlertCircle size={40} className="mx-auto mb-4 opacity-50" />
-            <p>선택한 지역의 특화 혜택 정보를 불러오는 중이거나 정보가 없습니다.</p>
+            <p>선택한 성장 단계와 지역에 등록된 혜택이 없습니다.</p>
+            <p className="mt-2 text-xs font-medium">다른 성장 단계나 지역 전체를 선택해 보세요.</p>
           </div>
         )}
       </div>

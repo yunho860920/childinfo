@@ -20,7 +20,15 @@ import { hospitalsInfra } from '../data/infrastructure/hospitals_infra';
 import { nursingRoomsInfra } from '../data/infrastructure/nursing_rooms';
 import { fetchNursingRoomsFromApi } from './nursingRoomService';
 import { getApiUrl } from './apiUrl.js';
-import { normalizeRegionName, parseAggressiveRegion } from '../utils/regionUtils';
+import {
+  isDeferredDaycareFacility,
+  normalizeFacilityCategory
+} from '../domain/facilities/facilityCategory.js';
+import {
+  normalizeRegionName,
+  normalizeSubRegionName,
+  parseAggressiveRegion
+} from '../utils/regionUtils';
 
 // System Database: High-density verified data
 const SYSTEM_DATABASE = [
@@ -56,7 +64,7 @@ function normalizeFacilityForUi(facility) {
     ...facility,
     type: mapFacilityType(facility.type || facility.category || '', facility.name || ''),
     region,
-    subRegion: facility.subRegion || parsed.subRegion || '전체',
+    subRegion: normalizeSubRegionName(facility.subRegion || parsed.subRegion, region),
     dong: facility.dong || parsed.dong || '전체',
     address: facility.address || '',
     lat: facility.lat ?? facility.latitude ?? null,
@@ -75,7 +83,9 @@ async function fetchV2Facilities() {
     || payload.records.length < MIN_EXPECTED_FACILITIES) {
     throw new Error('Facility V2 payload is incomplete.');
   }
-  return payload.records.map(normalizeFacilityForUi);
+  return payload.records
+    .map(normalizeFacilityForUi)
+    .filter((facility) => !isDeferredDaycareFacility(facility));
 }
 
 function loadFacilitySnapshot() {
@@ -83,7 +93,10 @@ function loadFacilitySnapshot() {
     if (typeof window === 'undefined') return null;
     const raw = window.localStorage.getItem(FACILITY_SNAPSHOT_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    return Array.isArray(parsed) && parsed.length >= MIN_EXPECTED_FACILITIES ? parsed : null;
+    if (!Array.isArray(parsed) || parsed.length < MIN_EXPECTED_FACILITIES) return null;
+    return parsed
+      .map(normalizeFacilityForUi)
+      .filter((facility) => !isDeferredDaycareFacility(facility));
   } catch (e) {
     return null;
   }
@@ -184,7 +197,8 @@ export async function fetchChildFacilities() {
   // Normalize System Database types to match UI categories
   const normalizedSystem = SYSTEM_DATABASE.map(normalizeFacilityForUi);
 
-  const allData = [...normalizedSystem, ...apiFacilities, ...apiNursingRooms];
+  const allData = [...normalizedSystem, ...apiFacilities, ...apiNursingRooms]
+    .filter((facility) => !isDeferredDaycareFacility(facility));
   const seenNames = new Set();
   const deduped = allData.filter(fac => {
     const uniqueKey = `${fac.name}-${fac.region}-${fac.subRegion}`;
@@ -215,37 +229,6 @@ const CAT_DAYCARE = '어린이집';
 const CAT_PLAY = '놀이·체험';
 const CAT_NURSING = '유아휴게소';
 
-const CATEGORY_KEYWORDS = {
-  [CAT_DAYCARE]: ['어린이집', '보육', '유치원', '집'],
-  [CAT_FAMILY]: ['가족센터', '건강가정', '다문화', '가족'],
-  [CAT_HOSPITAL]: ['병원', '의원', '상담', '발달', '소아과', '정신', '치료', '심리', '허그맘'],
-  [CAT_PLAY]: ['키즈카페', '놀이터', '박물관', '체험', '과학관', '도서관', '장난감', '미술관', '생태', '숲체험', '문화센터', '상상나라', '아트홀', '극단', '체육', '공원'],
-  [CAT_CARE]: ['키움', '지원센터', '나눔터', '아동복지', '아동센터', '육아종합', '다함께', '지역아동', '꿈나무', '돌봄', '방과후'],
-  [CAT_NURSING]: ['유아휴게소', '수유실', '휴게실']
-};
-
-function normalizeCategory(typeStr, nameStr) {
-  const t = (typeStr + nameStr).toLowerCase();
-  
-  if (t.includes('어린이집')) return CAT_DAYCARE;
-  if (t.includes('가족센터') || t.includes('건강가정') || t.includes('다문화')) return CAT_FAMILY;
-  if (t.includes('병원') || t.includes('의원') || t.includes('상담') || t.includes('발달') || t.includes('소아과') || t.includes('정신') || t.includes('심리')) return CAT_HOSPITAL;
-  
-  for (const k of CATEGORY_KEYWORDS[CAT_PLAY]) {
-    if (t.includes(k)) return CAT_PLAY;
-  }
-
-  for (const k of CATEGORY_KEYWORDS[CAT_NURSING]) {
-    if (t.includes(k)) return CAT_NURSING;
-  }
-
-  for (const k of CATEGORY_KEYWORDS[CAT_CARE]) {
-    if (t.includes(k)) return CAT_CARE;
-  }
-  
-  return CAT_CARE; // Default fall-through
-}
-
 export const getFilteredFacilities = (facilities, region, subRegion, dong, query, category = '전체') => {
   if (!facilities || !Array.isArray(facilities)) return [];
   
@@ -256,12 +239,15 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
     : false;
   return facilities.filter(f => {
     // 1. Precise Category Normalization
-    const facilityCat = normalizeCategory(f.type || '', f.name || '');
+    const facilityCat = normalizeFacilityCategory(f.type || '', f.name || '');
+    if (facilityCat === CAT_DAYCARE) return false;
     const matchCategory = category === '전체' || facilityCat === category;
 
     // 2. Geographic Filtering (Region/SubRegion)
     const matchRegion = normalizedRegion === '전체' || normalizeRegionName(f.region) === normalizedRegion;
-    const matchSub = subRegion === '전체' || f.subRegion === subRegion;
+    const normalizedSubRegion = normalizeSubRegionName(f.subRegion, normalizeRegionName(f.region));
+    const selectedSubRegion = normalizeSubRegionName(subRegion, normalizedRegion);
+    const matchSub = selectedSubRegion === '전체' || normalizedSubRegion === selectedSubRegion;
     // Fix: If a specific dong is selected, show facilities belonging to that dong.
     // If a facility has '전체' dong, it only matches if the filter is '전체' OR if the name/address contains the dong.
     const matchDong = !dong || dong === '전체' || f.dong === dong
@@ -296,6 +282,6 @@ export const getFilteredFacilities = (facilities, region, subRegion, dong, query
 }
 
 function mapFacilityType(rawType, name) {
-  return normalizeCategory(rawType, name);
+  return normalizeFacilityCategory(rawType, name);
 }
 // Local helper moved to regionUtils.js

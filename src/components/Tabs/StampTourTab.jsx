@@ -27,7 +27,7 @@ const REGIONS = [
   { id: 'busan', name: '부산광역시', active: true },
   { id: 'incheon', name: '인천광역시', active: true },
   { id: 'gyeonggi', name: '경기도', active: true },
-  { id: 'soon', name: 'Coming Soon 🤫', active: false },
+  { id: 'soon', name: '다른 지역 준비 중', active: false },
 ];
 
 const SEOUL_SPOTS = [
@@ -119,7 +119,7 @@ export const STAMP_TOUR_SPOTS = {
   gyeonggi: GYEONGGI_SPOTS
 };
 
-const SVG_REGIONS = new Set(REGIONS.map((region) => region.id));
+const SVG_REGIONS = new Set(REGIONS.filter((region) => region.active).map((region) => region.id));
 
 const MAP_PROJECTIONS = {
   seoul: {
@@ -179,6 +179,10 @@ const MAP_PROJECTIONS = {
 const getMapImageSrc = (region) => {
   return SVG_REGIONS.has(region) ? `/${region}_map.svg` : '/seoul_map.svg';
 };
+
+const getSpotMapUrl = (spot) => (
+  `https://map.kakao.com/?q=${encodeURIComponent(`${spot.name} ${spot.address || ''}`.trim())}`
+);
 
 const getSpotMapPosition = (region, spot) => {
   const projection = MAP_PROJECTIONS[region];
@@ -358,7 +362,9 @@ const StampTourTab = ({ isAdmin, initialRegion = 'seoul', focusSpotId = null }) 
   };
 
   const visitedCount = Object.values(visited).filter(Boolean).length;
-  const progress = Math.round((visitedCount / currentSpots.length) * 100);
+  const progress = currentSpots.length
+    ? Math.round((visitedCount / currentSpots.length) * 100)
+    : 0;
 
   const currentRegionData = REGIONS.find(r => r.id === activeRegion);
 
@@ -379,16 +385,15 @@ const StampTourTab = ({ isAdmin, initialRegion = 'seoul', focusSpotId = null }) 
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6 pb-24">
       
       {/* 🚀 전국 지역 선택 바 (Horizontal Scroll) */}
+      <p className="px-1 text-xs font-bold text-brand-gray-400">
+        현재 서울·부산·인천·경기 4개 지역, 총 70개 가족 명소를 운영하고 있어요.
+      </p>
       <div className="overflow-x-auto no-scrollbar -mx-6 px-6">
         <div className="flex gap-2 min-w-max pb-2">
           {REGIONS.map((region) => (
             <button
               key={region.id}
               onClick={() => {
-                if (region.id === 'soon') {
-                  alert("🎁 쉿! 다음 미션 지역은 비밀이에요!\n\n어느 지역에 새로운 아기랑 모험 지도가 생길지 맞춰보세요! 🤫\n\n힌트: 파도소리가 시원하게 들리고, 맛있는 먹거리가 아주 가득한 남쪽의 아름다운 도시는 어디일까요? 🌊🦁");
-                  return;
-                }
                 setActiveRegion(region.id);
               }}
               className={cn(
@@ -641,7 +646,15 @@ const StampTourTab = ({ isAdmin, initialRegion = 'seoul', focusSpotId = null }) 
                                     ? "방문 완료 (스탬프 찍기)" 
                                     : "200m 이내 실제 방문 시 스탬프 획득 가능"}
                               </button>
-                              <button className="w-14 h-14 bg-brand-gray-50 dark:bg-apple-elevated rounded-2xl flex items-center justify-center text-brand-gray-500 hover:bg-brand-gray-100 transition-colors"><ExternalLink size={20} /></button>
+                              <a
+                                href={getSpotMapUrl(spot)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${spot.name} 지도에서 열기`}
+                                className="w-14 h-14 bg-brand-gray-50 dark:bg-apple-elevated rounded-2xl flex items-center justify-center text-brand-gray-500 hover:bg-brand-gray-100 transition-colors"
+                              >
+                                <ExternalLink size={20} />
+                              </a>
                             </div>
                           </div>
                         </motion.div>
@@ -766,14 +779,14 @@ const StampTourTab = ({ isAdmin, initialRegion = 'seoul', focusSpotId = null }) 
               </div>
             </div>
             <div>
-              <h3 className="text-2xl font-black dark:text-white">{currentRegionData.name} 투어 준비 중!</h3>
-              <p className="text-brand-gray-400 font-bold mt-2 px-4">지도 자산은 준비됐고, 가족 명소와 GPS 스탬프 코스를 채우는 중이에요.<br/>{currentRegionData.name}의 멋진 장소들도 곧 찾아올게요!</p>
+              <h3 className="text-2xl font-black dark:text-white">전국 투어 확대 준비 중!</h3>
+              <p className="text-brand-gray-400 font-bold mt-2 px-4">검증된 가족 명소와 GPS 스탬프 코스가 준비된 지역부터 순서대로 열 예정입니다.<br/>현재는 서울·부산·인천·경기 투어를 이용해 주세요.</p>
             </div>
             <button 
               onClick={() => setActiveRegion('seoul')}
               className="px-8 py-3.5 bg-brand-primary text-white rounded-2xl font-black shadow-lg shadow-brand-primary/20 hover:scale-105 active:scale-95 transition-all"
             >
-              서울특별시 투어 먼저 하기
+              운영 중인 서울 투어 보기
             </button>
           </motion.div>
         )}

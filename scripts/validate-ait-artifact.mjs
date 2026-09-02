@@ -30,11 +30,24 @@ for (const requiredEntry of REQUIRED_ENTRIES) {
     throw new Error(`AIT artifact is missing required entry: ${requiredEntry}`);
   }
 }
-if (!normalizedEntries.some((entry) => /^web\/assets\/app-.*\.js$/.test(entry))) {
+const appScriptIndex = normalizedEntries.findIndex(
+  (entry) => /^web\/assets\/app-.*\.js$/.test(entry),
+);
+if (appScriptIndex === -1) {
   throw new Error('AIT artifact is missing the built web application script.');
 }
 if (!normalizedEntries.some((entry) => /^web\/assets\/app-.*\.css$/.test(entry))) {
   throw new Error('AIT artifact is missing the built web application styles.');
+}
+
+const appScript = new TextDecoder('utf-8', { fatal: true }).decode(
+  await reader.readEntry(entries[appScriptIndex]),
+);
+const brokenRechartsDefaultImport = /\{CartesianGrid:[^}]{0,512}\}=[\w$]+\.default(?:[;,])/;
+if (brokenRechartsDefaultImport.test(appScript)) {
+  throw new Error(
+    'AIT artifact contains the Recharts UMD default-import startup crash.',
+  );
 }
 
 const uncompressedBytes = reader.bundle.index.reduce(

@@ -12,6 +12,7 @@ skills/
 .vercel/
 
 # Local experiment/build artifacts that should not affect app data.
+scratch/
 scratch-vsix/
 *.vsix
 *.zip
